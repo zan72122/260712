@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>きらきらしまの だいぼうけん</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 3D canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- soft vignette + color grade overlay -->
+  <div id="vignette"></div>
+
+  <!-- ===== Title screen ===== -->
+  <div id="title-screen">
+    <div class="title-inner">
+      <div id="title-logo">
+        <span class="t-line1">✨きらきらしまの✨</span>
+        <span class="t-line2">だいぼうけん</span>
+      </div>
+      <div id="title-bunny">🐰</div>
+      <button id="start-button">▶ タップして はじめる</button>
+      <div class="title-hint">おほしさまを あつめて<br>おともだちを さがそう！</div>
+    </div>
+  </div>
+
+  <!-- ===== HUD ===== -->
+  <div id="hud" class="hidden">
+    <div id="hud-top">
+      <div id="star-counter" class="hud-pill">
+        <span class="star-icon">⭐</span><span id="star-count">0</span>
+      </div>
+      <div id="friend-counter" class="hud-pill">
+        <span class="friend-slot" data-friend="0">❓</span>
+        <span class="friend-slot" data-friend="1">❓</span>
+        <span class="friend-slot" data-friend="2">❓</span>
+        <span class="friend-slot" data-friend="3">❓</span>
+        <span class="friend-slot" data-friend="4">❓</span>
+      </div>
+      <button id="sound-button" class="hud-pill">🔊</button>
+    </div>
+
+    <!-- big friendly message banner -->
+    <div id="message-banner" class="hidden"></div>
+
+    <!-- touch controls -->
+    <div id="joystick-zone">
+      <div id="joystick-base"><div id="joystick-knob"></div></div>
+    </div>
+    <button id="jump-button">
+      <span class="jump-icon">⬆</span>
+      <span class="jump-label">ジャンプ</span>
+    </button>
+  </div>
+
+  <!-- celebration overlay (full clear) -->
+  <div id="celebrate-overlay" class="hidden">
+    <div class="celebrate-text">🎉 やったね！ 🎉<br>みんな あつまったよ！</div>
+  </div>
+
+  <script src="vendor/three.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/sky.js"></script>
+  <script src="js/ocean.js"></script>
+  <script src="js/island.js"></script>
+  <script src="js/nature.js"></script>
+  <script src="js/characters.js"></script>
+  <script src="js/effects.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
