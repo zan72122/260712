@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#2a1a4a">
+<title>✨ プリンセスと ひかりの おうこく ✨</title>
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three.module.min.js"
+  }
+}
+</script>
+</head>
+<body>
+  <div id="app">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- ===== HUD ===== -->
+    <div id="hud" class="hidden">
+      <div id="counters">
+        <div class="counter" id="star-counter">
+          <svg class="progress-ring" viewBox="0 0 44 44">
+            <circle class="ring-bg" cx="22" cy="22" r="19"></circle>
+            <circle class="ring-fg" id="star-ring" cx="22" cy="22" r="19"></circle>
+          </svg>
+          <span class="counter-icon">⭐</span>
+          <span class="counter-num" id="star-num">0</span>
+        </div>
+        <div class="counter" id="heart-counter">
+          <span class="counter-icon">💖</span>
+          <span class="counter-num" id="heart-num">0</span>
+        </div>
+      </div>
+
+      <div id="buttons">
+        <button class="round-btn" id="btn-time" aria-label="時間を変える">☀️</button>
+        <button class="round-btn" id="btn-magic" aria-label="魔法">🪄</button>
+        <button class="round-btn" id="btn-dress" aria-label="ドレスの色">👗</button>
+        <button class="round-btn" id="btn-music" aria-label="音楽">🎵</button>
+      </div>
+
+      <div id="hint" class="hidden"><span id="hint-hand">👆</span><span id="hint-text">タップで あるくよ！</span></div>
+      <div id="celebrate-banner" class="hidden">🎉 すごい！ おめでとう！ 🎆</div>
+    </div>
+
+    <!-- ===== タイトル画面 ===== -->
+    <div id="title-screen">
+      <div class="title-sparkles" aria-hidden="true">
+        <span>✦</span><span>✧</span><span>✦</span><span>✧</span><span>✦</span>
+        <span>✧</span><span>✦</span><span>✧</span><span>✦</span><span>✧</span>
+      </div>
+      <div class="title-castle" aria-hidden="true">🏰</div>
+      <h1 class="title-logo"><span class="logo-line1">プリンセスと</span><span class="logo-line2">ひかりの おうこく</span></h1>
+      <p class="title-sub">Princess &amp; the Kingdom of Light</p>
+      <button id="btn-start">▶ はじめる</button>
+      <p class="title-note">🎧 おとが でるよ ／ ゆびで タップして あそんでね</p>
+    </div>
+
+    <!-- ローディング -->
+    <div id="loading"><div class="loader-star">⭐</div><p>じゅんびちゅう…</p></div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
