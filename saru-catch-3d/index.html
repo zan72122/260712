@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#7BC8F6">
+<title>さるキャッチ！</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none; user-select:none; -webkit-user-select:none; }
+  html, body { width:100%; height:100%; overflow:hidden; position:fixed; background:#7BC8F6; touch-action:none; font-family:"Hiragino Maru Gothic ProN","BIZ UDGothic","Rounded Mplus 1c",system-ui,sans-serif; }
+  #renderCanvas { width:100%; height:100%; display:block; touch-action:none; outline:none; }
+
+  /* ===== HUD ===== */
+  #hud { position:fixed; inset:0; pointer-events:none; z-index:10;
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) calc(env(safe-area-inset-right, 0px) + 10px) calc(env(safe-area-inset-bottom, 0px) + 10px) calc(env(safe-area-inset-left, 0px) + 10px);
+    display:none; }
+  .chip { background:rgba(255,255,255,.92); border-radius:999px; padding:8px 16px; font-size:22px; font-weight:800; color:#5A4632;
+    box-shadow:0 4px 10px rgba(30,60,90,.25); display:flex; align-items:center; gap:6px; }
+  #topLeft { position:absolute; top:calc(env(safe-area-inset-top,0px) + 10px); left:calc(env(safe-area-inset-left,0px) + 10px); display:flex; flex-direction:column; gap:8px; }
+  #topRight { position:absolute; top:calc(env(safe-area-inset-top,0px) + 10px); right:calc(env(safe-area-inset-right,0px) + 10px); display:flex; gap:10px; }
+  .iconBtn { pointer-events:auto; width:56px; height:56px; border-radius:50%; border:none; font-size:28px;
+    background:rgba(255,255,255,.92); box-shadow:0 4px 10px rgba(30,60,90,.25); cursor:pointer; transition:transform .1s; }
+  .iconBtn:active { transform:scale(.88); }
+  #monkeyChip.bump { animation:bump .4s; }
+  @keyframes bump { 30% { transform:scale(1.25); } }
+
+  /* ===== 中央のお祝い絵文字 ===== */
+  .cheer { position:fixed; left:50%; top:38%; transform:translate(-50%,-50%); font-size:84px; z-index:20; pointer-events:none;
+    animation:cheerAnim 1.4s ease-out forwards; }
+  @keyframes cheerAnim { 0% { transform:translate(-50%,-50%) scale(.2); opacity:0; }
+    25% { transform:translate(-50%,-50%) scale(1.3); opacity:1; }
+    55% { transform:translate(-50%,-50%) scale(1); opacity:1; }
+    100% { transform:translate(-50%,-90%) scale(1); opacity:0; } }
+
+  /* ===== タイトル画面 ===== */
+  #titleScreen { position:fixed; inset:0; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px;
+    background:linear-gradient(180deg,#8ED4FF 0%,#BDE7FF 45%,#FFE9A8 100%); }
+  #titleLogo { font-size:min(13vw,72px); font-weight:900; color:#FF7B3E; letter-spacing:.04em;
+    text-shadow:0 4px 0 #fff, 0 8px 18px rgba(150,80,0,.25); animation:floaty 2.4s ease-in-out infinite; }
+  @keyframes floaty { 50% { transform:translateY(-10px) rotate(-1.5deg); } }
+  #titleMonkeys { font-size:min(12vw,64px); display:flex; gap:14px; }
+  #titleMonkeys span { display:inline-block; animation:hop 1s ease-in-out infinite; }
+  #titleMonkeys span:nth-child(2){ animation-delay:.15s; } #titleMonkeys span:nth-child(3){ animation-delay:.3s; }
+  #titleMonkeys span:nth-child(4){ animation-delay:.45s; } #titleMonkeys span:nth-child(5){ animation-delay:.6s; }
+  @keyframes hop { 40% { transform:translateY(-22px) scale(1.06); } }
+  #playBtn { width:min(38vw,160px); height:min(38vw,160px); border-radius:50%; border:none; cursor:pointer;
+    background:radial-gradient(circle at 32% 28%, #8CE06B, #43B843); color:#fff; font-size:min(16vw,70px);
+    box-shadow:0 10px 0 #2E8F2E, 0 16px 30px rgba(30,110,30,.4); transition:transform .12s, box-shadow .12s; }
+  #playBtn:active { transform:translateY(8px); box-shadow:0 2px 0 #2E8F2E, 0 6px 14px rgba(30,110,30,.4); }
+  #playBtn:disabled { filter:grayscale(.6); }
+  #titleHint { font-size:18px; color:#7A6242; font-weight:700; }
+
+  /* ===== ずかんモーダル ===== */
+  #zukanModal { position:fixed; inset:0; z-index:60; background:rgba(40,70,110,.45); display:none; align-items:center; justify-content:center;
+    backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); }
+  #zukanPanel { background:linear-gradient(180deg,#FFF8E8,#FFEFC8); border-radius:28px; width:min(92vw,560px); max-height:82vh;
+    padding:18px; box-shadow:0 14px 40px rgba(20,40,80,.4); display:flex; flex-direction:column; gap:12px; }
+  #zukanHeader { display:flex; align-items:center; justify-content:space-between; }
+  #zukanTitle { font-size:26px; font-weight:900; color:#8A6430; }
+  #zukanGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(108px,1fr)); gap:12px; overflow-y:auto; padding:4px;
+    -webkit-overflow-scrolling:touch; touch-action:pan-y; }
+  .zCard { background:#fff; border-radius:20px; padding:10px 6px; display:flex; flex-direction:column; align-items:center; gap:4px;
+    box-shadow:0 3px 8px rgba(120,90,40,.18); cursor:pointer; transition:transform .1s; pointer-events:auto; }
+  .zCard:active { transform:scale(.92); }
+  .zFace { width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:38px; position:relative; }
+  .zBadge { position:absolute; right:-6px; top:-6px; font-size:22px; }
+  .zName { font-size:13px; font-weight:800; color:#6B5638; }
+  .zCount { font-size:12px; font-weight:700; color:#B08A4F; }
+  .zCard.unknown .zFace { filter:grayscale(1) brightness(.35); }
+  .zCard.unknown .zName { color:#BBB; }
+  .zCard.wiggle { animation:wig .5s; }
+  @keyframes wig { 25% { transform:rotate(-6deg) scale(1.06);} 60% { transform:rotate(5deg) scale(1.06);} }
+
+  #errBox { position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center; text-align:center;
+    background:#8ED4FF; font-size:22px; font-weight:800; color:#54462F; padding:30px; }
+</style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+
+<div id="hud">
+  <div id="topLeft">
+    <div class="chip" id="monkeyChip">🐵 <span id="monkeyCount">0</span><span id="monkeyTotal">/24</span></div>
+    <div class="chip">🍌 <span id="bananaCount">0</span></div>
+  </div>
+  <div id="topRight">
+    <button class="iconBtn" id="zukanBtn" aria-label="ずかん">📖</button>
+    <button class="iconBtn" id="muteBtn" aria-label="おと">🔊</button>
+  </div>
+</div>
+
+<div id="titleScreen">
+  <div id="titleLogo">さるキャッチ！</div>
+  <div id="titleMonkeys"><span>🐵</span><span>🍌</span><span>🐵</span><span>🎈</span><span>🐵</span></div>
+  <button id="playBtn" disabled>⏳</button>
+  <div id="titleHint">タップしてあそぼう！</div>
+</div>
+
+<div id="zukanModal">
+  <div id="zukanPanel">
+    <div id="zukanHeader">
+      <div id="zukanTitle">📖 さるずかん</div>
+      <button class="iconBtn" id="zukanClose">❌</button>
+    </div>
+    <div id="zukanGrid"></div>
+  </div>
+</div>
+
+<div id="errBox"><div>🌐 インターネットに つないでから<br>もういちど ひらいてね！</div></div>
+
+<script src="vendor/babylon.min.js"></script>
+<script>
+  // 同梱ファイルが読めない環境ではCDNにフォールバック
+  if (typeof BABYLON === 'undefined') {
+    document.write('<script src="https://cdn.babylonjs.com/babylon.js"><\/script>');
+  }
+</script>
+<script>
+'use strict';
+(function(){
+
+if (typeof BABYLON === 'undefined') {
+  document.getElementById('errBox').style.display = 'flex';
+  document.getElementById('titleScreen').style.display = 'none';
+  return;
+}
+
+/* ============================================================
+   共通ヘルパー
+============================================================ */
+const V3 = (x,y,z)=>new BABYLON.Vector3(x,y,z);
+const C3 = h=>BABYLON.Color3.FromHexString(h);
+const rand = (a,b)=>a+Math.random()*(b-a);
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+function lerpAngle(a,b,t){
+  let d=(b-a)%(Math.PI*2);
+  if(d>Math.PI)d-=Math.PI*2; if(d<-Math.PI)d+=Math.PI*2;
+  return a+d*t;
+}
+const $ = id=>document.getElementById(id);
+
+/* ============================================================
+   セーブデータ(ずかんは累積で保存)
+============================================================ */
+const SAVE_KEY = 'sarucatch_v1';
+const save = { zukan:{}, bananasTotal:0 };
+try {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (raw) Object.assign(save, JSON.parse(raw));
+} catch(e){}
+function persist(){
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch(e){}
+}
+
+/* ============================================================
+   サルの種類データ(ずかん)
+============================================================ */
+const SPECIES = [
+  { id:'nonbiri', name:'のんびりザル', emoji:'🍃', color:'#B07A50', speed:2.2, stamina:2.6 },
+  { id:'boushi',  name:'ぼうしザル',   emoji:'🧢', color:'#8B5E3C', speed:2.7, stamina:3.2, cap:true },
+  { id:'hana',    name:'はなザル',     emoji:'🌸', color:'#E58BB4', speed:2.5, stamina:3.0, flower:true },
+  { id:'nemuri',  name:'ねむりザル',   emoji:'💤', color:'#9FA8B8', speed:2.1, stamina:2.0, sleepy:true },
+  { id:'umi',     name:'うみザル',     emoji:'🌊', color:'#5BA7D6', speed:2.9, stamina:3.4, beach:true },
+  { id:'hayate',  name:'はやてザル',   emoji:'⚡', color:'#E8B84B', speed:3.4, stamina:3.8 },
+  { id:'rocket',  name:'ロケットザル', emoji:'🚀', color:'#B9C2CE', speed:2.9, stamina:3.6, rocket:true },
+  { id:'ousama',  name:'おうさまザル', emoji:'👑', color:'#F0C930', speed:3.3, stamina:4.4, crown:true },
+];
+const SPECIES_MAP = {};
+SPECIES.forEach(s=>SPECIES_MAP[s.id]=s);
+
+// 登場順キュー: 簡単なサルから順に、だんだん賑やかに
+const SPAWN_QUEUE = [
+  'nonbiri','nonbiri','boushi','nonbiri','boushi','hana',
+  'nemuri','boushi','hayate','umi','hana','nemuri',
+  'boushi','hayate','umi','nonbiri','rocket','hana',
+  'nemuri','umi','hayate','rocket','ousama','ousama',
+];
+const TOTAL_MONKEYS = SPAWN_QUEUE.length;
+
+/* ============================================================
+   サウンド(WebAudio: BGM+効果音を全てコード生成)
+============================================================ */
+const Snd = {
+  ctx:null, master:null, bgmGain:null, seGain:null, muted:false,
+  step:0, nextTime:0, timer:null,
+
+  init(){
+    if (this.ctx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    this.ctx = new AC();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = 0.9;
+    this.master.connect(this.ctx.destination);
+    this.bgmGain = this.ctx.createGain();
+    this.bgmGain.gain.value = 0.34;
+    this.bgmGain.connect(this.master);
+    this.seGain = this.ctx.createGain();
+    this.seGain.gain.value = 0.9;
+    this.seGain.connect(this.master);
+  },
+  resume(){ if (this.ctx && this.ctx.state==='suspended') this.ctx.resume(); },
+  setMuted(m){
+    this.muted = m;
+    if (this.master) this.master.gain.value = m ? 0 : 0.9;
+  },
+  freq(m){ return 440*Math.pow(2,(m-69)/12); },
+
+  tone(midi, t, dur, type, vol, dest, glideTo){
+    const o=this.ctx.createOscillator(), g=this.ctx.createGain();
+    o.type=type; o.frequency.setValueAtTime(this.freq(midi), t);
+    if (glideTo) o.frequency.exponentialRampToValueAtTime(Math.max(20,glideTo), t+dur);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+    o.connect(g); g.connect(dest||this.seGain);
+    o.start(t); o.stop(t+dur+0.05);
+  },
+  noise(t, dur, vol, filterFreq, type){
+    const len = Math.max(1, Math.floor(this.ctx.sampleRate*dur));
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+    const src=this.ctx.createBufferSource(); src.buffer=buf;
+    const f=this.ctx.createBiquadFilter(); f.type=type||'lowpass'; f.frequency.value=filterFreq||1200;
+    const g=this.ctx.createGain();
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+    src.connect(f); f.connect(g); g.connect(this.seGain);
+    src.start(t); src.stop(t+dur);
+  },
+
+  /* --- BGM: 8分音符シーケンサー(4小節ループ) --- */
+  MELODY: [
+    72,0,76,0, 79,0,76,0,  72,0,76,0, 79,76,79,0,
+    74,0,77,0, 81,0,77,74, 79,77,76,74, 72,0,0,0,
+  ],
+  BASS: [
+    48,0,55,0, 48,0,55,0,  48,0,55,0, 48,0,55,0,
+    50,0,57,0, 50,0,57,0,  43,0,50,0, 48,0,55,0,
+  ],
+  STEP_DUR: 60/138/2,
+
+  startBgm(){
+    if (this.timer) return;
+    this.step=0; this.nextTime=this.ctx.currentTime+0.1;
+    this.timer = setInterval(()=>{
+      while (this.nextTime < this.ctx.currentTime + 0.30){
+        this.scheduleStep(this.step, this.nextTime);
+        this.step = (this.step+1)%this.MELODY.length;
+        this.nextTime += this.STEP_DUR;
+      }
+    }, 90);
+  },
+  scheduleStep(i, t){
+    const m=this.MELODY[i], b=this.BASS[i];
+    if (m) this.tone(m, t, this.STEP_DUR*1.7, 'square', 0.09, this.bgmGain);
+    if (b) this.tone(b, t, this.STEP_DUR*1.9, 'triangle', 0.22, this.bgmGain);
+    if (i%2===0){ // ハット
+      const g=this.ctx.createGain();
+      g.gain.setValueAtTime(i%8===0?0.05:0.03, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t+0.05);
+      const len=Math.floor(this.ctx.sampleRate*0.05);
+      const buf=this.ctx.createBuffer(1,len,this.ctx.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let j=0;j<len;j++)d[j]=Math.random()*2-1;
+      const s=this.ctx.createBufferSource(); s.buffer=buf;
+      const f=this.ctx.createBiquadFilter(); f.type='highpass'; f.frequency.value=7000;
+      s.connect(f); f.connect(g); g.connect(this.bgmGain);
+      s.start(t); s.stop(t+0.06);
+    }
+    if (i%8===0) this.tone(36, t, 0.12, 'sine', 0.5, this.bgmGain, 40);
+  },
+
+  /* --- 効果音 --- */
+  now(){ return this.ctx ? this.ctx.currentTime : 0; },
+  pop(hi){ if(!this.ctx)return; const t=this.now();
+    this.tone(hi?86:79, t, 0.12, 'sine', 0.5, null, this.freq(hi?98:91)); },
+  swish(){ if(!this.ctx)return; this.noise(this.now(), 0.18, 0.35, 2600, 'bandpass'); },
+  boing(){ if(!this.ctx)return; const t=this.now();
+    this.tone(55, t, 0.3, 'square', 0.22, null, this.freq(79)); },
+  splash(){ if(!this.ctx)return; this.noise(this.now(), 0.3, 0.4, 900, 'lowpass'); },
+  wheee(){ if(!this.ctx)return; const t=this.now();
+    this.tone(72, t, 0.8, 'sine', 0.3, null, this.freq(88));
+    this.tone(88, t+0.8, 0.5, 'sine', 0.25, null, this.freq(76)); },
+  balloonPop(){ if(!this.ctx)return; const t=this.now();
+    this.noise(t, 0.09, 0.6, 3200, 'highpass'); this.tone(96, t, 0.1, 'sine', 0.3); },
+  monkeyCry(){ if(!this.ctx)return; const t=this.now();
+    this.tone(93, t, 0.09, 'square', 0.12, null, this.freq(86));
+    this.tone(95, t+0.11, 0.09, 'square', 0.10, null, this.freq(88)); },
+  catchJingle(){ if(!this.ctx)return; const t=this.now();
+    [[72,0],[76,0.09],[79,0.18],[84,0.28]].forEach(([m,d])=>
+      this.tone(m, t+d, 0.22, 'square', 0.16));
+    this.tone(84, t+0.42, 0.4, 'triangle', 0.22); },
+  fanfare(){ if(!this.ctx)return; const t=this.now();
+    [[72,0],[72,0.12],[72,0.24],[76,0.36],[79,0.6],[84,0.84]].forEach(([m,d])=>{
+      this.tone(m, t+d, 0.3, 'square', 0.15);
+      this.tone(m-12, t+d, 0.3, 'triangle', 0.18);
+    }); },
+  boom(){ if(!this.ctx)return; const t=this.now();
+    this.noise(t, 0.5, 0.5, 700, 'lowpass'); this.tone(40, t, 0.45, 'sine', 0.4, null, 30); },
+  sparkle(){ if(!this.ctx)return; const t=this.now();
+    [91,95,98,103].forEach((m,i)=>this.tone(m, t+i*0.05, 0.15, 'sine', 0.12)); },
+};
+
+/* ============================================================
+   Babylon シーン基盤
+============================================================ */
+const canvas = $('renderCanvas');
+const engine = new BABYLON.Engine(canvas, true, { stencil:false, antialias:true });
+engine.setHardwareScalingLevel(1/Math.min(window.devicePixelRatio||1, 2));
+
+const scene = new BABYLON.Scene(engine);
+scene.clearColor = new BABYLON.Color4(0.48, 0.79, 0.98, 1);
+scene.ambientColor = new BABYLON.Color3(0.28, 0.28, 0.28);
+scene.fogMode = BABYLON.Scene.FOGMODE_EXP2;
+scene.fogDensity = 0.0032;
+scene.fogColor = new BABYLON.Color3(0.62, 0.85, 0.98);
+
+const hemi = new BABYLON.HemisphericLight('hemi', V3(0.15,1,0.1), scene);
+hemi.intensity = 0.72;
+hemi.diffuse = C3('#FFFFFF');
+hemi.groundColor = C3('#6E9B5C');
+const dir = new BABYLON.DirectionalLight('dir', V3(-0.45,-1,0.4), scene);
+dir.intensity = 0.42;
+
+const camera = new BABYLON.ArcRotateCamera('cam', -Math.PI/2, 1.02, 17, V3(0,0,0), scene);
+camera.minZ = 0.5; camera.maxZ = 400;
+// 操作は全てタップ移動なのでカメラ入力は切る
+camera.inputs.clear();
+
+function fitCamera(){
+  const aspect = engine.getRenderWidth()/Math.max(1, engine.getRenderHeight());
+  camera.radius = aspect < 0.8 ? 21 : (aspect < 1.2 ? 18 : 15.5);
+  camera.fov = aspect < 0.8 ? 0.95 : 0.85;
+}
+fitCamera();
+
+/* --- トゥーン風マテリアル(明るい発色・スペキュラ無し) --- */
+const matCache = {};
+function mat(hex, opts){
+  opts = opts || {};
+  const key = hex + JSON.stringify(opts);
+  if (matCache[key]) return matCache[key];
+  const m = new BABYLON.StandardMaterial('m'+key, scene);
+  m.diffuseColor = C3(hex);
+  m.emissiveColor = C3(hex).scale(opts.glow!=null ? opts.glow : 0.10);
+  m.specularColor = BABYLON.Color3.Black();
+  m.ambientColor = C3(hex).scale(0.5);
+  if (opts.alpha != null) m.alpha = opts.alpha;
+  if (opts.backFace === false) m.backFaceCulling = false;
+  matCache[key] = m;
+  return m;
+}
+
+/* ============================================================
+   地形(1つの大きな島)
+============================================================ */
+const ISLAND_R = 76;      // 波打ち際の半径目安
+const WATER_Y = -1.2;
+
+function bump(x,z,cx,cz,h,r){
+  const dx=x-cx, dz=z-cz;
+  return h*Math.exp(-(dx*dx+dz*dz)/(r*r));
+}
+function terrainH(x,z){
+  const r = Math.hypot(x,z);
+  let h = 0;
+  h += bump(x,z,-40,-30, 7.0, 24);  // すべり台の丘
+  h += bump(x,z, 45,-40, 4.5, 20);  // 南東の丘
+  h += bump(x,z, 48, 46, 3.0, 18);  // 森の丘
+  const pr = Math.hypot(x,z);
+  if (pr < 20) h *= (pr/20)*(pr/20); // 中央プラザはほぼ平ら
+  if (r > 68) h -= (r-68)/22*3.4;    // 海へなだらかに沈む
+  return h;
+}
+
+const ground = BABYLON.MeshBuilder.CreateGround('ground', { width:230, height:230, subdivisions:96, updatable:true }, scene);
+{
+  const pos = ground.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+  const colors = new Float32Array(pos.length/3*4);
+  const grass = C3('#7ECB5A'), grassDark = C3('#5FB248');
+  const sand = C3('#F2DFA0'), plaza = C3('#F5E8BE'), under = C3('#D9C489');
+  for (let i=0;i<pos.length;i+=3){
+    const x=pos[i], z=pos[i+2];
+    const h = terrainH(x,z);
+    pos[i+1]=h;
+    const r=Math.hypot(x,z);
+    let c;
+    if (h < -0.15) c = under;
+    else if (r > 64) c = sand;
+    else if (r < 17) c = plaza;
+    else {
+      const t = clamp(h/6,0,1)*0.7 + (((Math.sin(x*0.35)+Math.cos(z*0.3))*0.5+1)/2)*0.3;
+      c = BABYLON.Color3.Lerp(grass, grassDark, t);
+    }
+    const j=i/3*4;
+    colors[j]=c.r; colors[j+1]=c.g; colors[j+2]=c.b; colors[j+3]=1;
+  }
+  ground.updateVerticesData(BABYLON.VertexBuffer.PositionKind, pos);
+  ground.setVerticesData(BABYLON.VertexBuffer.ColorKind, colors);
+  const norms = [];
+  BABYLON.VertexData.ComputeNormals(pos, ground.getIndices(), norms);
+  ground.updateVerticesData(BABYLON.VertexBuffer.NormalKind, norms);
+}
+ground.material = mat('#FFFFFF', { glow:0.14 });
+ground.isPickable = true;
+ground.freezeWorldMatrix();
+
+/* --- 海と波打ちの泡リング --- */
+const sea = BABYLON.MeshBuilder.CreateDisc('sea', { radius:180, tessellation:48 }, scene);
+sea.rotation.x = Math.PI/2;
+sea.position.y = WATER_Y;
+sea.material = mat('#3FB6E8', { glow:0.35 });
+sea.isPickable = false;
+
+const foam = BABYLON.MeshBuilder.CreateTorus('foam', { diameter:ISLAND_R*2+2, thickness:2.0, tessellation:64 }, scene);
+foam.position.y = WATER_Y+0.06;
+foam.scaling.y = 0.06;
+foam.material = mat('#FFFFFF', { glow:0.5, alpha:0.65 });
+foam.isPickable = false;
+
+/* ============================================================
+   デコレーション(木・岩・花・雲・ちょうちょ)
+============================================================ */
+const decoRoots = [];
+function placeOnGround(node, x, z, yOff){
+  node.position.set(x, terrainH(x,z)+(yOff||0), z);
+}
+
+function makeTree(x, z, sakura){
+  const root = new BABYLON.TransformNode('tree', scene);
+  const trunk = BABYLON.MeshBuilder.CreateCylinder('t', { height:2.4, diameterTop:0.5, diameterBottom:0.75, tessellation:8 }, scene);
+  trunk.material = mat('#8E6234'); trunk.position.y = 1.2; trunk.parent = root;
+  const leafMat = sakura ? mat('#F5A8C6') : mat(Math.random()<0.5 ? '#4FA83E' : '#66BC4C');
+  const l1 = BABYLON.MeshBuilder.CreateSphere('l1', { diameter:3.0, segments:8 }, scene);
+  l1.material = leafMat; l1.position.y = 3.2; l1.parent = root;
+  const l2 = BABYLON.MeshBuilder.CreateSphere('l2', { diameter:2.1, segments:8 }, scene);
+  l2.material = leafMat; l2.position.set(rand(-1,1), 4.0, rand(-1,1)); l2.parent = root;
+  root.getChildMeshes().forEach(m=>{ m.isPickable=false; });
+  const s = rand(0.8, 1.4);
+  root.scaling.set(s,s,s);
+  root.rotation.y = rand(0, Math.PI*2);
+  placeOnGround(root, x, z, -0.1);
+  decoRoots.push(root);
+}
+const treeSpots = [];
+for (let i=0;i<26;i++){
+  const a = rand(0, Math.PI*2), r = rand(24, 60);
+  const x = Math.cos(a)*r, z = Math.sin(a)*r;
+  if (Math.hypot(x+40,z+30) < 14) continue;       // すべり台の丘は空ける
+  if (terrainH(x,z) < -0.1) continue;             // 砂浜より外は避ける
+  treeSpots.push([x,z]);
+}
+treeSpots.forEach(([x,z],i)=>makeTree(x,z, i%6===0));
+
+for (let i=0;i<12;i++){
+  const a = rand(0,Math.PI*2), r = rand(20, 62);
+  const x=Math.cos(a)*r, z=Math.sin(a)*r;
+  if (terrainH(x,z)<-0.1) continue;
+  const rock = BABYLON.MeshBuilder.CreateSphere('rock', { diameter:rand(1.2,2.6), segments:5 }, scene);
+  rock.scaling.y = 0.6;
+  rock.material = mat('#9DA6A8');
+  rock.rotation.y = rand(0,Math.PI*2);
+  rock.isPickable = false;
+  placeOnGround(rock, x, z, 0.2);
+}
+
+/* --- 花: thinInstance で1ドローコール --- */
+{
+  const petal = BABYLON.MeshBuilder.CreateSphere('flower', { diameter:0.5, segments:6 }, scene);
+  petal.scaling.y = 0.4;
+  const fm = new BABYLON.StandardMaterial('fm', scene);
+  fm.diffuseColor = BABYLON.Color3.White();
+  fm.emissiveColor = new BABYLON.Color3(0.25,0.25,0.25);
+  fm.specularColor = BABYLON.Color3.Black();
+  petal.material = fm;
+  petal.isPickable = false;
+  const N = 140;
+  const mats = new Float32Array(N*16);
+  const cols = new Float32Array(N*4);
+  const palette = ['#FF8FB1','#FFD166','#9BE1FF','#FFFFFF','#C6A6F5','#FF9E6B'];
+  let n = 0;
+  for (let i=0;i<N;i++){
+    const a = rand(0,Math.PI*2), r = rand(10, 64);
+    const x=Math.cos(a)*r, z=Math.sin(a)*r;
+    const h = terrainH(x,z);
+    if (h < -0.05) continue;
+    const s = rand(0.7,1.3);
+    const m = BABYLON.Matrix.Compose(V3(s,s,s), BABYLON.Quaternion.Identity(), V3(x, h+0.18, z));
+    m.copyToArray(mats, n*16);
+    const c = C3(palette[i%palette.length]);
+    cols[n*4]=c.r; cols[n*4+1]=c.g; cols[n*4+2]=c.b; cols[n*4+3]=1;
+    n++;
+  }
+  petal.thinInstanceSetBuffer('matrix', mats.slice(0,n*16), 16);
+  petal.thinInstanceSetBuffer('color', cols.slice(0,n*4), 4);
+}
+
+/* --- 雲 --- */
+const clouds = [];
+for (let i=0;i<7;i++){
+  const parts = [];
+  for (let j=0;j<3;j++){
+    const s = BABYLON.MeshBuilder.CreateSphere('c', { diameter:rand(5,9), segments:7 }, scene);
+    s.position.set(j*3.4-3.4+rand(-1,1), rand(-0.6,0.6), rand(-1.5,1.5));
+    s.scaling.y = 0.6;
+    parts.push(s);
+  }
+  const cloud = BABYLON.Mesh.MergeMeshes(parts, true, true);
+  cloud.material = mat('#FFFFFF', { glow:0.65 });
+  cloud.isPickable = false;
+  cloud.position.set(rand(-90,90), rand(26,40), rand(-90,90));
+  clouds.push({ mesh:cloud, vx:rand(0.3,0.9) });
+}
+
+/* --- ちょうちょ --- */
+const butterflies = [];
+for (let i=0;i<8;i++){
+  const b = BABYLON.MeshBuilder.CreatePlane('bf', { size:0.5 }, scene);
+  b.material = mat(['#FFD166','#FF8FB1','#9BE1FF','#C6A6F5'][i%4], { glow:0.5, backFace:false });
+  b.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+  b.isPickable = false;
+  const a = rand(0,Math.PI*2), r = rand(10,55);
+  butterflies.push({ mesh:b, cx:Math.cos(a)*r, cz:Math.sin(a)*r, t:rand(0,10), sp:rand(0.5,1.2) });
+}
+
+/* ============================================================
+   絵文字スプライト(💤や💦などをその場に出す)
+============================================================ */
+const emojiSprites = [];
+const emojiTexCache = {};
+function emojiTexture(ch){
+  if (emojiTexCache[ch]) return emojiTexCache[ch];
+  const dt = new BABYLON.DynamicTexture('et'+ch, { width:128, height:128 }, scene, false);
+  dt.hasAlpha = true;
+  const c = dt.getContext();
+  c.clearRect(0,0,128,128);
+  c.font = '100px sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(ch, 64, 70);
+  dt.update();
+  emojiTexCache[ch] = dt;
+  return dt;
+}
+function showEmoji(ch, pos, life, riseSpeed){
+  const p = BABYLON.MeshBuilder.CreatePlane('em', { size:1.0 }, scene);
+  const m = new BABYLON.StandardMaterial('emm', scene);
+  m.emissiveTexture = emojiTexture(ch);
+  m.opacityTexture = m.emissiveTexture;
+  m.disableLighting = true;
+  m.backFaceCulling = false;
+  p.material = m;
+  p.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+  p.position.copyFrom(pos);
+  p.isPickable = false;
+  emojiSprites.push({ mesh:p, mat:m, t:0, life:life||1.4, rise:riseSpeed==null?1.0:riseSpeed });
+}
+function updateEmojiSprites(dt){
+  for (let i=emojiSprites.length-1;i>=0;i--){
+    const s = emojiSprites[i];
+    s.t += dt;
+    s.mesh.position.y += s.rise*dt;
+    s.mat.alpha = clamp(1 - s.t/s.life, 0, 1);
+    if (s.t >= s.life){ s.mesh.dispose(); emojiSprites.splice(i,1); }
+  }
+}
+
+/* ============================================================
+   パーティクル演出
+============================================================ */
+let circleTex = null;
+function getCircleTex(){
+  if (circleTex) return circleTex;
+  const dt = new BABYLON.DynamicTexture('pt', { width:64, height:64 }, scene, false);
+  dt.hasAlpha = true;
+  const c = dt.getContext();
+  c.clearRect(0,0,64,64);
+  c.fillStyle = '#fff';
+  c.beginPath(); c.arc(32,32,26,0,Math.PI*2); c.fill();
+  dt.update();
+  circleTex = dt;
+  return dt;
+}
+function burst(pos, opts){
+  opts = opts || {};
+  const ps = new BABYLON.ParticleSystem('ps', opts.count||60, scene);
+  ps.particleTexture = getCircleTex();
+  ps.emitter = pos.clone();
+  ps.minEmitBox = V3(-0.2,-0.2,-0.2); ps.maxEmitBox = V3(0.2,0.2,0.2);
+  const c1 = C3(opts.c1||'#FFD166'), c2 = C3(opts.c2||'#FF8FB1');
+  ps.color1 = new BABYLON.Color4(c1.r,c1.g,c1.b,1);
+  ps.color2 = new BABYLON.Color4(c2.r,c2.g,c2.b,1);
+  ps.colorDead = new BABYLON.Color4(1,1,1,0);
+  ps.minSize = opts.minSize||0.18; ps.maxSize = opts.maxSize||0.4;
+  ps.minLifeTime = 0.5; ps.maxLifeTime = opts.life||1.1;
+  ps.emitRate = 0;
+  ps.manualEmitCount = opts.count||60;
+  ps.gravity = V3(0, opts.gravity==null?-6:opts.gravity, 0);
+  ps.direction1 = V3(-1, 0.5, -1).scale(opts.power||5);
+  ps.direction2 = V3(1, 1.4, 1).scale(opts.power||5);
+  ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_STANDARD;
+  ps.disposeOnStop = true;
+  ps.targetStopDuration = 0.15;
+  ps.start();
+}
+function confetti(pos){ burst(pos, { count:70, c1:'#FFD166', c2:'#FF8FB1', power:6 }); burst(pos, { count:50, c1:'#9BE1FF', c2:'#8CE06B', power:4 }); }
+function starBurst(pos){ burst(pos, { count:40, c1:'#FFF3B0', c2:'#FFD166', power:5, gravity:-2, life:0.9 }); }
+function poof(pos){ burst(pos, { count:26, c1:'#FFFFFF', c2:'#E8E8E8', power:2.2, gravity:1, life:0.8, maxSize:0.7 }); }
+function splashFx(pos){ burst(pos, { count:30, c1:'#BFE9FF', c2:'#7FD4F7', power:3.5, gravity:-9, life:0.7 }); }
+
+/* --- 花火 --- */
+const rockets = [];
+function launchFirework(x, z){
+  const m = BABYLON.MeshBuilder.CreateSphere('fw', { diameter:0.35, segments:4 }, scene);
+  m.material = mat('#FFF3B0', { glow:0.9 });
+  m.isPickable = false;
+  m.position.set(x, terrainH(x,z)+1, z);
+  rockets.push({ mesh:m, vy:rand(15,19), hue:Math.random() });
+}
+function fireworksShow(n, cx, cz){
+  for (let i=0;i<n;i++){
+    setTimeout(()=>{
+      launchFirework((cx||0)+rand(-22,22), (cz||0)+rand(-22,22));
+    }, i*420);
+  }
+}
+const FW_COLORS = [['#FF8FB1','#FFD166'],['#9BE1FF','#C6A6F5'],['#8CE06B','#FFF3B0'],['#FF9E6B','#FF8FB1']];
+function updateRockets(dt){
+  for (let i=rockets.length-1;i>=0;i--){
+    const r = rockets[i];
+    r.mesh.position.y += r.vy*dt;
+    r.vy -= 4*dt;
+    if (r.vy < 6){
+      const cc = FW_COLORS[Math.floor(r.hue*FW_COLORS.length)];
+      burst(r.mesh.position, { count:90, c1:cc[0], c2:cc[1], power:9, gravity:-3, life:1.4, maxSize:0.5 });
+      Snd.boom();
+      r.mesh.dispose();
+      rockets.splice(i,1);
+    }
+  }
+}
+
+/* ============================================================
+   プレイヤー(あみを持った子ども)
+============================================================ */
+function makeBlobShadow(d){
+  const s = BABYLON.MeshBuilder.CreateDisc('shadow', { radius:d/2, tessellation:20 }, scene);
+  s.rotation.x = Math.PI/2;
+  const m = new BABYLON.StandardMaterial('shm', scene);
+  m.diffuseColor = BABYLON.Color3.Black();
+  m.emissiveColor = BABYLON.Color3.Black();
+  m.specularColor = BABYLON.Color3.Black();
+  m.alpha = 0.18;
+  s.material = m;
+  s.isPickable = false;
+  return s;
+}
+
+function buildPlayer(){
+  const root = new BABYLON.TransformNode('player', scene);
+  const skin = '#F7D7B0', shirt = '#FF6B5E', pants = '#4A90D9', cap = '#FFD23E';
+
+  const body = BABYLON.MeshBuilder.CreateSphere('pb', { diameter:0.85, segments:10 }, scene);
+  body.scaling.y = 1.15; body.position.y = 0.72; body.material = mat(shirt); body.parent = root;
+
+  const head = BABYLON.MeshBuilder.CreateSphere('ph', { diameter:0.62, segments:10 }, scene);
+  head.position.y = 1.42; head.material = mat(skin); head.parent = root;
+  const capTop = BABYLON.MeshBuilder.CreateSphere('cap', { diameter:0.64, segments:8, slice:0.5 }, scene);
+  capTop.position.y = 1.56; capTop.material = mat(cap); capTop.parent = root;
+  const brim = BABYLON.MeshBuilder.CreateCylinder('brim', { height:0.05, diameter:0.5, tessellation:10 }, scene);
+  brim.position.set(0, 1.52, 0.36); brim.material = mat(cap); brim.parent = root;
+  const eyeL = BABYLON.MeshBuilder.CreateSphere('e', { diameter:0.09, segments:5 }, scene);
+  eyeL.position.set(-0.13, 1.46, 0.26); eyeL.material = mat('#302820'); eyeL.parent = root;
+  const eyeR = eyeL.clone('e2'); eyeR.position.x = 0.13; eyeR.parent = root;
+
+  const legL = BABYLON.MeshBuilder.CreateCapsule('ll', { height:0.5, radius:0.11 }, scene);
+  legL.material = mat(pants); legL.parent = root;
+  const legR = legL.clone('lr'); legR.parent = root;
+  const legPL = new BABYLON.TransformNode('lpl', scene); legPL.position.set(-0.18, 0.42, 0); legPL.parent = root;
+  const legPR = new BABYLON.TransformNode('lpr', scene); legPR.position.set(0.18, 0.42, 0); legPR.parent = root;
+  legL.parent = legPL; legL.position.y = -0.22;
+  legR.parent = legPR; legR.position.y = -0.22;
+
+  const armL = BABYLON.MeshBuilder.CreateCapsule('al', { height:0.5, radius:0.09 }, scene);
+  armL.material = mat(skin);
+  const armPL = new BABYLON.TransformNode('apl', scene); armPL.position.set(-0.45, 1.05, 0); armPL.parent = root;
+  armL.parent = armPL; armL.position.y = -0.22;
+
+  // 右腕はあみを持つ
+  const armPR = new BABYLON.TransformNode('apr', scene); armPR.position.set(0.45, 1.05, 0); armPR.parent = root;
+  const armR = armL.clone('ar'); armR.parent = armPR; armR.position.y = -0.22;
+  const net = new BABYLON.TransformNode('net', scene); net.parent = armPR;
+  const stick = BABYLON.MeshBuilder.CreateCylinder('ns', { height:1.3, diameter:0.07, tessellation:8 }, scene);
+  stick.material = mat('#B07A3E'); stick.parent = net; stick.position.y = 0.15;
+  const hoop = BABYLON.MeshBuilder.CreateTorus('nh', { diameter:0.75, thickness:0.05, tessellation:18 }, scene);
+  hoop.material = mat('#5AC8FA'); hoop.parent = net; hoop.position.y = 0.95;
+  const bag = BABYLON.MeshBuilder.CreateSphere('nb', { diameter:0.72, segments:8, slice:0.5 }, scene);
+  bag.rotation.x = Math.PI; bag.material = mat('#CFF1FF', { alpha:0.55 });
+  bag.parent = net; bag.position.y = 0.93;
+  armPR.rotation.x = -0.5;
+
+  root.getChildMeshes().forEach(m=>{ m.isPickable = false; });
+  const shadow = makeBlobShadow(1.1);
+  return { root, legPL, legPR, armPL, armPR, shadow };
+}
+
+const P = buildPlayer();
+const player = {
+  x:0, z:6, y:0, vy:0, air:false,
+  target:null, speed:4.8, phase:0, moving:false,
+  swing:-1, cool:0, sliding:false, slideT:0,
+  heading: Math.PI,
+};
+
+/* --- 行き先マーカー --- */
+const marker = BABYLON.MeshBuilder.CreateTorus('marker', { diameter:1.1, thickness:0.09, tessellation:24 }, scene);
+marker.material = mat('#FFE066', { glow:0.8 });
+marker.isPickable = false;
+marker.setEnabled(false);
+let markerT = 0;
+
+/* ============================================================
+   あそび場ギミック
+============================================================ */
+// トランポリン
+const TRAMP = { x:10, z:12, r:2.1 };
+{
+  const rim = BABYLON.MeshBuilder.CreateTorus('tr', { diameter:4.2, thickness:0.4, tessellation:24 }, scene);
+  rim.material = mat('#4A90D9'); rim.isPickable = false;
+  placeOnGround(rim, TRAMP.x, TRAMP.z, 0.35);
+  const pad = BABYLON.MeshBuilder.CreateCylinder('tp', { height:0.18, diameter:3.9, tessellation:24 }, scene);
+  pad.material = mat('#FF8FB1', { glow:0.35 }); pad.isPickable = false;
+  placeOnGround(pad, TRAMP.x, TRAMP.z, 0.35);
+  TRAMP.pad = pad;
+  TRAMP.squash = 0;
+}
+
+// 大きな赤いボタン → 花火
+const BIGBTN = { x:-10, z:10, r:1.9, cool:0 };
+{
+  const base = BABYLON.MeshBuilder.CreateCylinder('bb', { height:0.5, diameter:3.0, tessellation:24 }, scene);
+  base.material = mat('#C7CED6'); base.isPickable = false;
+  placeOnGround(base, BIGBTN.x, BIGBTN.z, 0.25);
+  const cap = BABYLON.MeshBuilder.CreateCylinder('bc', { height:0.45, diameter:2.2, tessellation:24 }, scene);
+  cap.material = mat('#FF5A5A', { glow:0.4 }); cap.isPickable = false;
+  placeOnGround(cap, BIGBTN.x, BIGBTN.z, 0.62);
+  BIGBTN.cap = cap;
+  BIGBTN.capY = cap.position.y;
+}
+
+// ふん水
+{
+  const pool = BABYLON.MeshBuilder.CreateTorus('pool', { diameter:5.6, thickness:0.55, tessellation:32 }, scene);
+  pool.material = mat('#8FD5F2'); pool.isPickable = false;
+  placeOnGround(pool, 0, 0, 0.28);
+  const water = BABYLON.MeshBuilder.CreateCylinder('pw', { height:0.15, diameter:5.2, tessellation:24 }, scene);
+  water.material = mat('#5AC8FA', { glow:0.4, alpha:0.85 }); water.isPickable = false;
+  placeOnGround(water, 0, 0, 0.3);
+  const ps = new BABYLON.ParticleSystem('fountain', 120, scene);
+  ps.particleTexture = getCircleTex();
+  ps.emitter = V3(0, terrainH(0,0)+0.4, 0);
+  ps.minEmitBox = V3(-0.1,0,-0.1); ps.maxEmitBox = V3(0.1,0,0.1);
+  ps.color1 = new BABYLON.Color4(0.7,0.9,1,0.9);
+  ps.color2 = new BABYLON.Color4(0.5,0.8,1,0.9);
+  ps.colorDead = new BABYLON.Color4(0.8,0.95,1,0);
+  ps.minSize = 0.12; ps.maxSize = 0.3;
+  ps.minLifeTime = 0.7; ps.maxLifeTime = 1.0;
+  ps.emitRate = 60;
+  ps.gravity = V3(0,-14,0);
+  ps.direction1 = V3(-0.6,7,-0.6); ps.direction2 = V3(0.6,9,0.6);
+  ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_STANDARD;
+  ps.start();
+}
+
+// すべり台(丘の上から)
+const SLIDE = { topX:-38, topZ:-29 };
+{
+  const pts2d = [[-38,-29],[-34,-25.5],[-29.5,-22],[-25,-18.5],[-20.5,-15.5],[-17,-13]];
+  const pts = pts2d.map(([x,z])=>V3(x, terrainH(x,z)+0.42, z));
+  // 丘はドーム状なので、サンプル点ごとに地形へ吸着させて埋まりを防ぐ
+  SLIDE.path = BABYLON.Curve3.CreateCatmullRomSpline(pts, 10).getPoints()
+    .map(p=>V3(p.x, terrainH(p.x,p.z)+0.42, p.z));
+  const sp = SLIDE.path;
+  for (let i=0;i<sp.length-1;i+=2){
+    const a=sp[i], b=sp[Math.min(i+2, sp.length-1)];
+    const len = BABYLON.Vector3.Distance(a,b);
+    const seg = BABYLON.MeshBuilder.CreateBox('sl', { width:2.0, height:0.22, depth:len+0.35 }, scene);
+    seg.material = mat('#42B9F5', { glow:0.4 });
+    seg.isPickable = false;
+    const cx=(a.x+b.x)/2, cz=(a.z+b.z)/2;
+    seg.position = V3(cx, terrainH(cx,cz)+0.32, cz);
+    seg.rotation.y = Math.atan2(b.x-a.x, b.z-a.z);
+    seg.rotation.x = -Math.atan2(b.y-a.y, Math.hypot(b.x-a.x, b.z-a.z));
+  }
+  // てっぺんの旗
+  const pole = BABYLON.MeshBuilder.CreateCylinder('fp', { height:3, diameter:0.12 }, scene);
+  pole.material = mat('#EEE8DC'); pole.isPickable=false;
+  placeOnGround(pole, SLIDE.topX+1.5, SLIDE.topZ-1.5, 1.5);
+  const flag = BABYLON.MeshBuilder.CreatePlane('fl', { width:1.2, height:0.8 }, scene);
+  flag.material = mat('#FF6B5E', { glow:0.45, backFace:false });
+  flag.isPickable=false;
+  flag.position = pole.position.add(V3(0.62, 1.1, 0));
+  SLIDE.flag = flag;
+}
+
+// ふうせん(タップで割れる)
+const balloons = [];
+const BALLOON_SPOTS = [[6,-6],[-14,2],[18,4],[-4,18],[13,-14],[-20,-8]];
+function spawnBalloon(i){
+  const [bx,bz] = BALLOON_SPOTS[i];
+  const colors = ['#FF6B5E','#FFD23E','#8CE06B','#5AC8FA','#C6A6F5','#FF8FB1'];
+  const root = new BABYLON.TransformNode('bal', scene);
+  const ball = BABYLON.MeshBuilder.CreateSphere('balB', { diameter:1.1, segments:10 }, scene);
+  ball.scaling.y = 1.15;
+  ball.material = mat(colors[i%colors.length], { glow:0.4 });
+  ball.parent = root; ball.position.y = 2.6;
+  ball.metadata = { balloon:i };
+  const str = BABYLON.MeshBuilder.CreateCylinder('balS', { height:1.8, diameter:0.03 }, scene);
+  str.material = mat('#FFFFFF'); str.parent = root; str.position.y = 1.4;
+  str.isPickable = false;
+  placeOnGround(root, bx, bz, 0);
+  balloons[i] = { root, ball, t:rand(0,6), alive:true };
+}
+BALLOON_SPOTS.forEach((_,i)=>spawnBalloon(i));
+
+/* ============================================================
+   バナナ
+============================================================ */
+const bananas = [];
+function makeBananaMesh(){
+  // 円弧に沿ったチューブで三日月(バナナ)形をつくる
+  const path = [];
+  for (let i=0;i<=10;i++){
+    const a = Math.PI*0.15 + (i/10)*Math.PI*0.7;
+    path.push(V3(Math.cos(a)*0.38, Math.sin(a)*0.38, 0));
+  }
+  const b = BABYLON.MeshBuilder.CreateTube('ban', { path, radius:0.11, tessellation:8, cap:BABYLON.Mesh.CAP_ALL }, scene);
+  b.material = mat('#FFD23E', { glow:0.35 });
+  b.rotation.set(0.5, rand(0,Math.PI*2), Math.PI);
+  b.isPickable = false;
+  return b;
+}
+function spawnBanana(){
+  for (let tries=0; tries<20; tries++){
+    const a=rand(0,Math.PI*2), r=rand(6,66);
+    const x=Math.cos(a)*r, z=Math.sin(a)*r;
+    if (terrainH(x,z) < -0.05) continue;
+    const m = makeBananaMesh();
+    m.position.set(x, terrainH(x,z)+0.55, z);
+    bananas.push({ mesh:m, t:rand(0,6), alive:true });
+    return;
+  }
+}
+for (let i=0;i<26;i++) spawnBanana();
+
+/* ============================================================
+   サル
+============================================================ */
+const monkeys = [];
+let queueIndex = 0;
+let sessionCatches = 0;
+let zukanCompleteShown = Object.keys(save.zukan).filter(k=>save.zukan[k]>0).length >= SPECIES.length;
+
+function buildMonkey(sp, party){
+  const root = new BABYLON.TransformNode('monkey', scene);
+  const fur = sp.color, skin = '#F5D9B8';
+
+  const body = BABYLON.MeshBuilder.CreateSphere('mb', { diameter:0.8, segments:10 }, scene);
+  body.scaling.y = 1.05; body.position.y = 0.55; body.material = mat(fur); body.parent = root;
+  body.metadata = { monkeyRoot:root };
+
+  const head = BABYLON.MeshBuilder.CreateSphere('mh', { diameter:0.58, segments:10 }, scene);
+  head.position.y = 1.12; head.material = mat(fur); head.parent = root;
+  head.metadata = { monkeyRoot:root };
+
+  const face = BABYLON.MeshBuilder.CreateSphere('mf', { diameter:0.42, segments:8 }, scene);
+  face.scaling.z = 0.55; face.position.set(0, 1.1, 0.2); face.material = mat(skin); face.parent = root;
+  const muzzle = BABYLON.MeshBuilder.CreateSphere('mm', { diameter:0.24, segments:8 }, scene);
+  muzzle.scaling.z = 0.6; muzzle.position.set(0, 1.02, 0.26); muzzle.material = mat(skin); muzzle.parent = root;
+
+  const eyeL = BABYLON.MeshBuilder.CreateSphere('me', { diameter:0.07, segments:5 }, scene);
+  eyeL.position.set(-0.1, 1.16, 0.3); eyeL.material = mat('#2A241E'); eyeL.parent = root;
+  const eyeR = eyeL.clone('me2'); eyeR.position.x = 0.1; eyeR.parent = root;
+
+  const earL = BABYLON.MeshBuilder.CreateSphere('mear', { diameter:0.2, segments:6 }, scene);
+  earL.position.set(-0.3, 1.18, 0); earL.material = mat(fur); earL.parent = root;
+  const earR = earL.clone('mear2'); earR.position.x = 0.3; earR.parent = root;
+
+  // しっぽ
+  const tailPts = [];
+  for (let i=0;i<=6;i++){
+    const t=i/6;
+    tailPts.push(V3(0, 0.5+Math.sin(t*2.2)*0.45, -0.35-t*0.4));
+  }
+  const tail = BABYLON.MeshBuilder.CreateTube('mt', { path:tailPts, radius:0.05, tessellation:6 }, scene);
+  tail.material = mat(fur); tail.parent = root;
+
+  // 手足
+  const armL = BABYLON.MeshBuilder.CreateCapsule('ma', { height:0.42, radius:0.08 }, scene);
+  armL.material = mat(fur);
+  const armPL = new BABYLON.TransformNode('mapl', scene); armPL.position.set(-0.38, 0.78, 0); armPL.parent = root;
+  armL.parent = armPL; armL.position.y = -0.18;
+  const armPR = new BABYLON.TransformNode('mapr', scene); armPR.position.set(0.38, 0.78, 0); armPR.parent = root;
+  const armR = armL.clone('ma2'); armR.parent = armPR; armR.position.y = -0.18;
+  const legL = BABYLON.MeshBuilder.CreateCapsule('mlg', { height:0.4, radius:0.09 }, scene);
+  legL.material = mat(fur);
+  const legPL = new BABYLON.TransformNode('mlpl', scene); legPL.position.set(-0.17, 0.3, 0); legPL.parent = root;
+  legL.parent = legPL; legL.position.y = -0.16;
+  const legPR = new BABYLON.TransformNode('mlpr', scene); legPR.position.set(0.17, 0.3, 0); legPR.parent = root;
+  const legR = legL.clone('mlg2'); legR.parent = legPR; legR.position.y = -0.16;
+
+  // 種類ごとのアクセサリー
+  if (sp.cap){
+    const c = BABYLON.MeshBuilder.CreateSphere('acc', { diameter:0.5, segments:8, slice:0.5 }, scene);
+    c.position.y = 1.34; c.material = mat('#FF5A5A'); c.parent = root;
+    const br = BABYLON.MeshBuilder.CreateCylinder('accb', { height:0.04, diameter:0.4, tessellation:8 }, scene);
+    br.position.set(0, 1.31, 0.28); br.material = mat('#FF5A5A'); br.parent = root;
+  }
+  if (sp.flower){
+    const f = BABYLON.MeshBuilder.CreateTorus('acc', { diameter:0.34, thickness:0.09, tessellation:12 }, scene);
+    f.position.set(0.16, 1.38, 0.05); f.rotation.x = 0.4; f.material = mat('#FF8FB1', { glow:0.5 }); f.parent = root;
+  }
+  if (sp.crown){
+    const c = BABYLON.MeshBuilder.CreateCylinder('acc', { height:0.22, diameterTop:0.42, diameterBottom:0.34, tessellation:10 }, scene);
+    c.position.y = 1.44; c.material = mat('#FFD23E', { glow:0.6 }); c.parent = root;
+    for (let i=0;i<3;i++){
+      const gem = BABYLON.MeshBuilder.CreateSphere('gem', { diameter:0.09, segments:5 }, scene);
+      gem.position.set((i-1)*0.13, 1.56, 0.12); gem.material = mat(['#FF5A5A','#5AC8FA','#8CE06B'][i], { glow:0.7 }); gem.parent = root;
+    }
+  }
+  if (sp.rocket){
+    const tank = BABYLON.MeshBuilder.CreateCylinder('acc', { height:0.5, diameter:0.22, tessellation:10 }, scene);
+    tank.position.set(-0.12, 0.75, -0.32); tank.rotation.x = 0.15; tank.material = mat('#E8EDF2'); tank.parent = root;
+    const tank2 = tank.clone('acc2'); tank2.position.x = 0.12; tank2.parent = root;
+    const tip = BABYLON.MeshBuilder.CreateSphere('acct', { diameter:0.22, segments:6 }, scene);
+    tip.position.set(-0.12, 1.02, -0.36); tip.material = mat('#FF5A5A'); tip.parent = root;
+    const tip2 = tip.clone('acct2'); tip2.position.x = 0.12; tip2.parent = root;
+  }
+  if (party){
+    const hat = BABYLON.MeshBuilder.CreateCylinder('party', { height:0.4, diameterTop:0.02, diameterBottom:0.3, tessellation:8 }, scene);
+    hat.position.y = 1.5; hat.material = mat(['#FF8FB1','#5AC8FA','#FFD23E'][Math.floor(rand(0,3))], { glow:0.5 }); hat.parent = root;
+  }
+
+  root.getChildMeshes().forEach(m=>{
+    if (!m.metadata || !m.metadata.monkeyRoot) m.isPickable = false;
+  });
+  const shadow = makeBlobShadow(0.95);
+  return { root, armPL, armPR, legPL, legPR, shadow };
+}
+
+const SPAWN_POINTS = [];
+for (let i=0;i<14;i++){
+  const a = i/14*Math.PI*2, r = rand(28,58);
+  const x=Math.cos(a)*r, z=Math.sin(a)*r;
+  if (terrainH(x,z) > -0.1) SPAWN_POINTS.push([x,z]);
+}
+
+// 「ゆるい段階制」: 捕まえるほど少しだけ速くなる(必ず追いつける上限つき)
+function difficultyFactor(){
+  return 1 + Math.min(sessionCatches, 20) * 0.012; // 最大 +24%
+}
+
+function spawnMonkey(speciesId, party){
+  const sp = SPECIES_MAP[speciesId];
+  // プレイヤーから離れた場所に出す
+  let best = null, bestD = -1;
+  for (let i=0;i<6;i++){
+    const cand = SPAWN_POINTS[Math.floor(rand(0,SPAWN_POINTS.length))];
+    const d = Math.hypot(cand[0]-player.x, cand[1]-player.z);
+    if (d > bestD){ bestD = d; best = cand; }
+  }
+  let x = best[0]+rand(-4,4), z = best[1]+rand(-4,4);
+  if (sp.beach){ // うみザルは波打ち際近くへ
+    const a = rand(0,Math.PI*2);
+    x = Math.cos(a)*62; z = Math.sin(a)*62;
+  }
+  const M = buildMonkey(sp, party);
+  const mk = {
+    sp, parts:M, x, z, y:0, vy:0, air:false,
+    state: sp.sleepy ? 'sleep' : 'idle',
+    heading: rand(0,Math.PI*2),
+    phase: rand(0,10), fleeT:0, restT:0, wanderT:0,
+    zzzT:0, leapT:rand(1,2), caught:false,
+  };
+  M.root.position.set(x, terrainH(x,z), z);
+  M.root.rotation.y = mk.heading;
+  monkeys.push(mk);
+  poof(V3(x, terrainH(x,z)+0.8, z));
+  return mk;
+}
+
+function spawnNextFromQueue(){
+  let id, party = false;
+  if (queueIndex < SPAWN_QUEUE.length){
+    id = SPAWN_QUEUE[queueIndex++];
+  } else {
+    id = SPECIES[Math.floor(rand(0,SPECIES.length))].id; // エンドレス: パーティー帽つき
+    party = true;
+  }
+  spawnMonkey(id, party);
+}
+for (let i=0;i<4;i++) spawnNextFromQueue();
+
+/* --- サルAI --- */
+function monkeySteer(mk, dt){
+  const sp = mk.sp;
+  const px = player.x, pz = player.z;
+  const dToP = Math.hypot(mk.x-px, mk.z-pz);
+  const spd = sp.speed * difficultyFactor();
+
+  if (mk.state === 'sleep'){
+    mk.zzzT += dt;
+    if (mk.zzzT > 1.3){ mk.zzzT = 0; showEmoji('💤', V3(mk.x, terrainH(mk.x,mk.z)+1.7, mk.z), 1.5, 0.8); }
+    if (dToP < 6){ mk.state = 'flee'; mk.fleeT = 0; showEmoji('❗', V3(mk.x, terrainH(mk.x,mk.z)+1.8, mk.z), 0.8, 1.4); }
+    return 0;
+  }
+  if (mk.state === 'tired'){
+    mk.restT -= dt;
+    if (mk.restT <= 0) mk.state = 'idle';
+    return 0;
+  }
+  if (mk.state === 'idle'){
+    mk.wanderT -= dt;
+    if (mk.wanderT <= 0){
+      mk.wanderT = rand(1.2, 3);
+      mk.heading += rand(-1.4, 1.4);
+    }
+    if (dToP < 9){ mk.state = 'flee'; mk.fleeT = 0; }
+    return spd*0.35;
+  }
+  // flee
+  mk.fleeT += dt;
+  const away = Math.atan2(mk.x-px, mk.z-pz);
+  mk.heading = lerpAngle(mk.heading, away + Math.sin(mk.phase*2.2)*0.5, clamp(dt*5,0,1));
+  if (dToP > 14){ mk.state = 'idle'; }
+  if (mk.fleeT > sp.stamina){
+    mk.state = 'tired'; mk.restT = 1.6; mk.fleeT = 0;
+    showEmoji('💦', V3(mk.x, terrainH(mk.x,mk.z)+1.7, mk.z), 1.2, 1.0);
+    return 0;
+  }
+  // ロケットザルはときどき大ジャンプで逃げる
+  if (sp.rocket){
+    mk.leapT -= dt;
+    if (mk.leapT <= 0 && !mk.air){
+      mk.leapT = rand(1.6, 2.6);
+      mk.vy = 8; mk.air = true;
+      burst(V3(mk.x, terrainH(mk.x,mk.z)+0.4, mk.z), { count:16, c1:'#FF9E6B', c2:'#FFD166', power:2, gravity:2, life:0.5 });
+    }
+  }
+  return spd;
+}
+
+function updateMonkey(mk, dt){
+  if (mk.state === 'caught'){
+    mk.catchT += dt;
+    const t = mk.catchT / 0.7;
+    mk.parts.root.rotation.y += dt*18;
+    mk.parts.root.position.y += dt*3.2;
+    const s = Math.max(0.01, 1-t);
+    mk.parts.root.scaling.set(s,s,s);
+    mk.parts.shadow.setEnabled(false);
+    if (t >= 1){
+      mk.parts.root.dispose();
+      mk.parts.shadow.dispose();
+      mk.dead = true;
+    }
+    return;
+  }
+
+  const spd = monkeySteer(mk, dt);
+  if (spd > 0){
+    let nx = mk.x + Math.sin(mk.heading)*spd*dt;
+    let nz = mk.z + Math.cos(mk.heading)*spd*dt;
+    // 島の外・深い水には行かない(うみザルは波打ち際までOK)
+    const limit = mk.sp.beach ? -0.9 : 0.0;
+    if (terrainH(nx,nz) < limit || Math.hypot(nx,nz) > 70){
+      mk.heading = Math.atan2(-mk.x, -mk.z) + rand(-0.5,0.5);
+      nx = mk.x; nz = mk.z;
+    }
+    mk.x = nx; mk.z = nz;
+    mk.phase += dt * spd * 2.2;
+  }
+
+  // トランポリン
+  if (!mk.air && Math.hypot(mk.x-TRAMP.x, mk.z-TRAMP.z) < TRAMP.r){
+    mk.vy = 9; mk.air = true; TRAMP.squash = 1;
+    Snd.boing();
+  }
+  const gy = terrainH(mk.x, mk.z);
+  if (mk.air){
+    mk.y += mk.vy*dt; mk.vy -= 22*dt;
+    if (mk.y <= gy){ mk.y = gy; mk.air = false; poof(V3(mk.x, gy+0.2, mk.z)); }
+  } else {
+    const hop = (mk.state==='sleep'||mk.state==='tired') ? 0 : Math.abs(Math.sin(mk.phase*2))*0.22;
+    mk.y = gy + hop;
+  }
+  // うみザルが浅瀬を走ると水しぶき
+  if (mk.sp.beach && gy < -0.3 && spd > 1 && Math.random() < dt*4){
+    splashFx(V3(mk.x, gy+0.3, mk.z));
+  }
+
+  const r = mk.parts.root;
+  r.position.set(mk.x, mk.y, mk.z);
+  r.rotation.y = lerpAngle(r.rotation.y, mk.heading, clamp(dt*8,0,1));
+  const sway = (mk.state==='sleep') ? 0 : Math.sin(mk.phase*2)*0.7;
+  mk.parts.armPL.rotation.x = sway; mk.parts.armPR.rotation.x = -sway;
+  mk.parts.legPL.rotation.x = -sway*0.8; mk.parts.legPR.rotation.x = sway*0.8;
+  if (mk.state === 'sleep'){
+    r.rotation.z = 0.35;
+    r.scaling.y = 0.92 + Math.sin(mk.phase)*0.03;
+    mk.phase += dt;
+  } else {
+    r.rotation.z = 0;
+  }
+  mk.parts.shadow.position.set(mk.x, gy+0.06, mk.z);
+}
+
+/* ============================================================
+   キャッチ処理・ごほうび・段階制
+============================================================ */
+const monkeyCountEl = $('monkeyCount'), monkeyTotalEl = $('monkeyTotal'), bananaCountEl = $('bananaCount');
+function cheer(ch){
+  const d = document.createElement('div');
+  d.className = 'cheer'; d.textContent = ch;
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(), 1500);
+}
+function updateHud(){
+  monkeyCountEl.textContent = sessionCatches;
+  monkeyTotalEl.textContent = queueIndex <= SPAWN_QUEUE.length && sessionCatches < TOTAL_MONKEYS ? '/'+TOTAL_MONKEYS : '';
+  bananaCountEl.textContent = save.bananasTotal;
+  const chip = $('monkeyChip');
+  chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump');
+}
+
+function catchMonkey(mk){
+  mk.state = 'caught'; mk.catchT = 0;
+  sessionCatches++;
+  save.zukan[mk.sp.id] = (save.zukan[mk.sp.id]||0) + 1;
+  persist();
+  updateHud();
+  buildZukan();
+
+  const pos = V3(mk.x, mk.y+1, mk.z);
+  confetti(pos); starBurst(pos);
+  Snd.catchJingle();
+  cheer(['🎉','⭐','💮','👏'][sessionCatches%4]);
+
+  // 5匹ごとに花火大会
+  if (sessionCatches % 5 === 0){
+    setTimeout(()=>{ fireworksShow(5, player.x, player.z); Snd.fanfare(); cheer('🎆'); }, 700);
+  }
+  // ずかんコンプリートのおまつり
+  const discovered = SPECIES.filter(s=>(save.zukan[s.id]||0)>0).length;
+  if (discovered >= SPECIES.length && !zukanCompleteShown){
+    zukanCompleteShown = true;
+    setTimeout(()=>{
+      fireworksShow(10, 0, 0); Snd.fanfare();
+      cheer('🌈');
+      setTimeout(()=>cheer('👑'), 1200);
+    }, 1200);
+  }
+  setTimeout(spawnNextFromQueue, 1600);
+}
+
+/* ============================================================
+   プレイヤー更新
+============================================================ */
+function startSlideIfNear(){
+  if (player.sliding || player.air) return;
+  if (Math.hypot(player.x-SLIDE.topX, player.z-SLIDE.topZ) < 2.4){
+    player.sliding = true; player.slideT = 0;
+    player.target = null;
+    Snd.wheee();
+  }
+}
+
+function updatePlayer(dt){
+  if (player.sliding){
+    player.slideT += dt / 1.7;
+    const pts = SLIDE.path;
+    const f = clamp(player.slideT, 0, 1) * (pts.length-1);
+    const i = Math.min(pts.length-2, Math.floor(f));
+    const p = BABYLON.Vector3.Lerp(pts[i], pts[i+1], f-i);
+    player.x = p.x; player.z = p.z; player.y = p.y;
+    player.heading = Math.atan2(pts[i+1].x-pts[i].x, pts[i+1].z-pts[i].z);
+    player.moving = true;
+    player.phase += dt*10;
+    if (player.slideT >= 1){
+      player.sliding = false;
+      confetti(V3(player.x, player.y+1, player.z));
+      Snd.pop(true);
+    }
+  } else {
+    player.moving = false;
+    if (player.target){
+      const dx = player.target.x-player.x, dz = player.target.z-player.z;
+      const d = Math.hypot(dx,dz);
+      if (d < 0.25){
+        player.target = null;
+      } else {
+        const ang = Math.atan2(dx,dz);
+        player.heading = lerpAngle(player.heading, ang, clamp(dt*10,0,1));
+        const step = Math.min(d, player.speed*dt);
+        let nx = player.x + Math.sin(player.heading)*step;
+        let nz = player.z + Math.cos(player.heading)*step;
+        // 深い海には入れない
+        if (terrainH(nx,nz) > -0.9 && Math.hypot(nx,nz) < 74){
+          const wasAbove = terrainH(player.x,player.z) > -0.25;
+          player.x = nx; player.z = nz;
+          if (wasAbove && terrainH(nx,nz) <= -0.25){ splashFx(V3(nx, terrainH(nx,nz)+0.3, nz)); Snd.splash(); }
+        } else {
+          player.target = null;
+        }
+        player.moving = true;
+        player.phase += dt*9;
+      }
+    }
+    // トランポリン
+    if (!player.air && Math.hypot(player.x-TRAMP.x, player.z-TRAMP.z) < TRAMP.r){
+      player.vy = 10; player.air = true; TRAMP.squash = 1;
+      Snd.boing();
+      cheerMaybe('🤸');
+    }
+    const gy = terrainH(player.x, player.z);
+    if (player.air){
+      player.y += player.vy*dt; player.vy -= 24*dt;
+      if (player.y <= gy){ player.y = gy; player.air = false; poof(V3(player.x, gy+0.2, player.z)); }
+    } else {
+      player.y = gy;
+    }
+    // 大ボタン
+    if (BIGBTN.cool <= 0 && Math.hypot(player.x-BIGBTN.x, player.z-BIGBTN.z) < BIGBTN.r){
+      BIGBTN.cool = 8;
+      BIGBTN.cap.position.y = BIGBTN.capY - 0.22;
+      fireworksShow(4, BIGBTN.x, BIGBTN.z);
+      Snd.fanfare();
+      cheer('🎆');
+    }
+    startSlideIfNear();
+  }
+
+  // 自動キャッチ: 近くのサルへ自動であみを振る
+  player.cool -= dt;
+  if (player.swing < 0 && player.cool <= 0){
+    for (const mk of monkeys){
+      if (mk.dead || mk.state === 'caught') continue;
+      if (Math.hypot(mk.x-player.x, mk.z-player.z) < 2.15){
+        player.swing = 0; player.cool = 1.0;
+        player.swingHit = false;
+        Snd.swish();
+        break;
+      }
+    }
+  }
+  if (player.swing >= 0){
+    player.swing += dt;
+    const t = player.swing / 0.42;
+    const a = t < 0.45 ? lerp(-0.5, -2.4, t/0.45) : lerp(-2.4, -0.5, (t-0.45)/0.55);
+    P.armPR.rotation.x = a;
+    if (!player.swingHit && t >= 0.4){
+      player.swingHit = true;
+      for (const mk of monkeys){
+        if (mk.dead || mk.state === 'caught') continue;
+        if (Math.hypot(mk.x-player.x, mk.z-player.z) < 2.7){
+          catchMonkey(mk);
+          break;
+        }
+      }
+    }
+    if (t >= 1) player.swing = -1;
+  } else {
+    P.armPR.rotation.x = -0.5 + (player.moving ? Math.sin(player.phase)*0.25 : Math.sin(performance.now()*0.001)*0.06);
+  }
+
+  // 見た目更新
+  P.root.position.set(player.x, player.y, player.z);
+  P.root.rotation.y = player.heading;
+  const sway = player.moving ? Math.sin(player.phase) : 0;
+  P.legPL.rotation.x = sway*0.9; P.legPR.rotation.x = -sway*0.9;
+  P.armPL.rotation.x = -sway*0.7;
+  P.root.scaling.y = player.air ? 1.06 : 1 + (player.moving ? Math.abs(Math.sin(player.phase))*0.04 : 0);
+  P.shadow.position.set(player.x, terrainH(player.x,player.z)+0.06, player.z);
+}
+
+let lastCheer = 0;
+function cheerMaybe(ch){
+  const now = performance.now();
+  if (now - lastCheer > 4000){ lastCheer = now; cheer(ch); }
+}
+
+/* ============================================================
+   入力(タップ)
+============================================================ */
+scene.onPointerObservable.add(pi=>{
+  if (pi.type !== BABYLON.PointerEventTypes.POINTERDOWN) return;
+  if (!started) return;
+  Snd.resume();
+  const pick = scene.pick(scene.pointerX, scene.pointerY, m=>
+    m === ground || (m.metadata && (m.metadata.balloon !== undefined || m.metadata.monkeyRoot))
+  );
+  if (!pick || !pick.hit) return;
+  const mesh = pick.pickedMesh;
+
+  if (mesh.metadata && mesh.metadata.balloon !== undefined){
+    const idx = mesh.metadata.balloon;
+    const b = balloons[idx];
+    if (b && b.alive){
+      b.alive = false;
+      confetti(mesh.getAbsolutePosition());
+      Snd.balloonPop();
+      cheer('🎈');
+      b.root.dispose();
+      setTimeout(()=>spawnBalloon(idx), 9000);
+    }
+    return;
+  }
+  if (mesh.metadata && mesh.metadata.monkeyRoot){
+    // サルをタップ → そこへ向かう
+    const pos = mesh.metadata.monkeyRoot.position;
+    player.target = { x:pos.x, z:pos.z };
+    Snd.monkeyCry();
+    return;
+  }
+  if (pick.pickedPoint){
+    const p = pick.pickedPoint;
+    if (terrainH(p.x,p.z) > -0.9){
+      player.target = { x:p.x, z:p.z };
+      marker.position.set(p.x, terrainH(p.x,p.z)+0.15, p.z);
+      marker.setEnabled(true);
+      markerT = 0;
+      Snd.pop(false);
+    }
+  }
+});
+
+/* ============================================================
+   ずかんUI
+============================================================ */
+function buildZukan(){
+  const grid = $('zukanGrid');
+  grid.innerHTML = '';
+  SPECIES.forEach(sp=>{
+    const n = save.zukan[sp.id]||0;
+    const card = document.createElement('div');
+    card.className = 'zCard' + (n>0 ? '' : ' unknown');
+    const face = document.createElement('div');
+    face.className = 'zFace';
+    face.style.background = sp.color;
+    face.textContent = '🐵';
+    const badge = document.createElement('div');
+    badge.className = 'zBadge';
+    badge.textContent = sp.emoji;
+    face.appendChild(badge);
+    const name = document.createElement('div');
+    name.className = 'zName';
+    name.textContent = n>0 ? sp.name : '？？？';
+    const count = document.createElement('div');
+    count.className = 'zCount';
+    count.textContent = n>0 ? '×'+n : '';
+    card.appendChild(face); card.appendChild(name); card.appendChild(count);
+    card.addEventListener('pointerdown', ()=>{
+      card.classList.remove('wiggle'); void card.offsetWidth; card.classList.add('wiggle');
+      if (n>0) Snd.monkeyCry(); else Snd.pop(false);
+    });
+    grid.appendChild(card);
+  });
+}
+$('zukanBtn').addEventListener('pointerdown', e=>{
+  e.stopPropagation();
+  buildZukan();
+  $('zukanModal').style.display = 'flex';
+  Snd.pop(true);
+});
+$('zukanClose').addEventListener('pointerdown', ()=>{
+  $('zukanModal').style.display = 'none';
+  Snd.pop(false);
+});
+$('zukanModal').addEventListener('pointerdown', e=>{
+  if (e.target === $('zukanModal')) $('zukanModal').style.display = 'none';
+});
+
+$('muteBtn').addEventListener('pointerdown', e=>{
+  e.stopPropagation();
+  Snd.setMuted(!Snd.muted);
+  $('muteBtn').textContent = Snd.muted ? '🔇' : '🔊';
+});
+
+/* ============================================================
+   メインループ
+============================================================ */
+let started = false;
+let ambientCryT = 3;
+
+scene.onBeforeRenderObservable.add(()=>{
+  const dt = clamp(engine.getDeltaTime()/1000, 0, 0.05);
+  const t = performance.now()*0.001;
+
+  // 環境アニメ
+  sea.position.y = WATER_Y + Math.sin(t*0.8)*0.05;
+  foam.scaling.x = foam.scaling.z = 1 + Math.sin(t*0.9)*0.008;
+  clouds.forEach(c=>{
+    c.mesh.position.x += c.vx*dt;
+    if (c.mesh.position.x > 110) c.mesh.position.x = -110;
+  });
+  butterflies.forEach(b=>{
+    b.t += dt*b.sp;
+    const x = b.cx + Math.sin(b.t*0.7)*4, z = b.cz + Math.cos(b.t*0.53)*4;
+    b.mesh.position.set(x, terrainH(x,z)+1.2+Math.sin(b.t*2.1)*0.4, z);
+    b.mesh.scaling.x = 0.5+Math.abs(Math.sin(b.t*10))*0.5;
+  });
+  balloons.forEach(b=>{
+    if (!b || !b.alive) return;
+    b.t += dt;
+    b.ball.position.y = 2.6 + Math.sin(b.t*1.4)*0.18;
+    b.root.rotation.y = Math.sin(b.t*0.6)*0.2;
+  });
+  bananas.forEach(bn=>{
+    if (!bn.alive) return;
+    bn.t += dt;
+    bn.mesh.rotation.y += dt*1.5;
+    bn.mesh.position.y = terrainH(bn.mesh.position.x, bn.mesh.position.z)+0.55+Math.sin(bn.t*2)*0.08;
+  });
+  if (SLIDE.flag) SLIDE.flag.rotation.y = Math.sin(t*2.5)*0.25;
+  if (TRAMP.squash > 0){
+    TRAMP.squash = Math.max(0, TRAMP.squash - dt*4);
+    TRAMP.pad.scaling.y = 1 - TRAMP.squash*0.5 + Math.sin(TRAMP.squash*12)*0.1*TRAMP.squash;
+  }
+  if (BIGBTN.cool > 0){
+    BIGBTN.cool -= dt;
+    if (BIGBTN.cool <= 0) BIGBTN.cap.position.y = BIGBTN.capY;
+  }
+  if (marker.isEnabled()){
+    markerT += dt;
+    marker.scaling.setAll(1 - markerT*0.5);
+    marker.rotation.y += dt*3;
+    if (markerT > 1.2 || !player.target) marker.setEnabled(false);
+  }
+
+  updateEmojiSprites(dt);
+  updateRockets(dt);
+
+  if (!started) {
+    // タイトル中はカメラをゆっくり回す
+    camera.alpha += dt*0.08;
+    camera.target = V3(0, 2, 0);
+    return;
+  }
+
+  updatePlayer(dt);
+
+  for (let i=monkeys.length-1;i>=0;i--){
+    const mk = monkeys[i];
+    updateMonkey(mk, dt);
+    if (mk.dead) monkeys.splice(i,1);
+  }
+
+  // バナナ取得
+  bananas.forEach(bn=>{
+    if (!bn.alive) return;
+    if (Math.hypot(bn.mesh.position.x-player.x, bn.mesh.position.z-player.z) < 1.3){
+      bn.alive = false;
+      save.bananasTotal++;
+      persist(); updateHud();
+      starBurst(bn.mesh.position);
+      Snd.pop(true);
+      if (save.bananasTotal % 10 === 0){ cheer('🍌'); Snd.sparkle(); }
+      bn.mesh.dispose();
+      setTimeout(()=>{ const idx=bananas.indexOf(bn); if(idx>=0) bananas.splice(idx,1); spawnBanana(); }, 15000);
+    }
+  });
+
+  // ときどきサルが鳴く
+  ambientCryT -= dt;
+  if (ambientCryT <= 0){
+    ambientCryT = rand(3,7);
+    const near = monkeys.find(m=>!m.dead && m.state!=='caught' && Math.hypot(m.x-player.x, m.z-player.z) < 22);
+    if (near) Snd.monkeyCry();
+  }
+
+  // カメラ追従
+  const ct = camera.target;
+  camera.target = V3(
+    lerp(ct.x, player.x, clamp(dt*4,0,1)),
+    lerp(ct.y, player.y+1.2, clamp(dt*4,0,1)),
+    lerp(ct.z, player.z, clamp(dt*4,0,1))
+  );
+  camera.alpha = lerpAngle(camera.alpha, -Math.PI/2, clamp(dt*0.8,0,1));
+});
+
+engine.runRenderLoop(()=>scene.render());
+
+window.addEventListener('resize', ()=>{ engine.resize(); fitCamera(); });
+window.addEventListener('orientationchange', ()=>{
+  setTimeout(()=>{ engine.resize(); fitCamera(); }, 300);
+});
+document.addEventListener('touchmove', e=>e.preventDefault(), { passive:false });
+
+/* ============================================================
+   タイトル → スタート
+============================================================ */
+const playBtn = $('playBtn');
+scene.executeWhenReady(()=>{
+  playBtn.disabled = false;
+  playBtn.textContent = '▶';
+});
+playBtn.addEventListener('click', ()=>{
+  if (playBtn.disabled) return;
+  Snd.init();
+  Snd.resume();
+  Snd.startBgm();
+  started = true;
+  $('titleScreen').style.display = 'none';
+  $('hud').style.display = 'block';
+  updateHud();
+  buildZukan();
+  Snd.fanfare();
+  cheer('🐵');
+});
+
+// 自動テスト用の最小フック(ゲーム動作には影響しない)
+window.__saru = {
+  state: ()=>({ catches:sessionCatches, monkeys:monkeys.length, queueIndex, bananas:save.bananasTotal }),
+  teleport: (x,z)=>{ player.x=x; player.z=z; player.target=null; },
+  firstMonkey: ()=>{ const m=monkeys.find(m=>!m.dead && m.state!=='caught'); return m?[m.x,m.z]:null; },
+};
+
+})();
+</script>
+</body>
+</html>
