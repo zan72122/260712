@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#2a9fd8">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏖️</text></svg>">
+<title>なつやすみ うみのぼうけん</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 3D canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- ===== タイトル画面 ===== -->
+  <div id="title-screen">
+    <div class="title-sun"></div>
+    <div class="title-clouds">
+      <span class="tcloud c1"></span><span class="tcloud c2"></span><span class="tcloud c3"></span>
+    </div>
+    <div class="title-inner">
+      <div class="title-sub">ぼくの ちいさな</div>
+      <h1 class="title-main"><span>な</span><span>つ</span><span>や</span><span>す</span><span>み</span></h1>
+      <div class="title-sub2">〜 うみの ぼうけん 〜</div>
+      <button id="btn-start" type="button">
+        <span class="start-icon">🌊</span> はじめる！
+      </button>
+      <div class="title-hint">おとが でるよ 🔊</div>
+    </div>
+    <div class="title-wave w1"></div>
+    <div class="title-wave w2"></div>
+  </div>
+
+  <!-- ===== HUD ===== -->
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div class="hud-left">
+        <button class="round-btn" id="btn-book" type="button" aria-label="ずかん">📖</button>
+        <button class="round-btn" id="btn-sound" type="button" aria-label="おと">🔊</button>
+        <button class="round-btn" id="btn-time" type="button" aria-label="とき">☀️</button>
+      </div>
+      <div class="hud-right">
+        <div class="counter-chip" id="chip-shell">🐚 <b id="count-shell">0</b></div>
+        <div class="counter-chip" id="chip-fish">🐟 <b id="count-fish">0</b></div>
+        <div class="counter-chip" id="chip-bug">🦋 <b id="count-bug">0</b></div>
+      </div>
+    </div>
+
+    <!-- コンテキストアクションボタン -->
+    <button id="btn-action" class="hidden" type="button">つりを する！</button>
+
+    <!-- トースト -->
+    <div id="toast" class="hidden"></div>
+
+    <!-- つかまえた！の大きなお祝い -->
+    <div id="celebrate" class="hidden">
+      <div class="celebrate-card">
+        <div class="celebrate-stars">✨🎉✨</div>
+        <div class="celebrate-emoji" id="celebrate-emoji">🐟</div>
+        <div class="celebrate-name" id="celebrate-name">たい</div>
+        <div class="celebrate-label" id="celebrate-label">つかまえた！</div>
+      </div>
+    </div>
+
+    <!-- びっくりマーク（さかながかかった！） -->
+    <div id="bite-mark" class="hidden">❗</div>
+  </div>
+
+  <!-- ===== ずかん ===== -->
+  <div id="book-modal" class="hidden">
+    <div class="book-card">
+      <div class="book-title">🏖️ なつやすみ ずかん 📖</div>
+      <div class="book-grid" id="book-grid"></div>
+      <div class="book-progress" id="book-progress"></div>
+      <button class="book-close" id="btn-book-close" type="button">とじる</button>
+    </div>
+  </div>
+
+  <!-- ===== バーチャルスティック ===== -->
+  <div id="joystick" class="hidden">
+    <div id="joystick-base"><div id="joystick-thumb"></div></div>
+  </div>
+
+  <div id="rotate-tip" class="hidden">📱 どっちむきでも あそべるよ！</div>
+
+  <script src="vendor/three.min.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/sky.js"></script>
+  <script src="js/ocean.js"></script>
+  <script src="js/island.js"></script>
+  <script src="js/character.js"></script>
+  <script src="js/creatures.js"></script>
+  <script src="js/activities.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
