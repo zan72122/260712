@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#7ec8f2">
+<title>まほうのふで と いろのしま 🖌️🌈</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="game-root">
+  <canvas id="game-canvas"></canvas>
+
+  <!-- ===== HUD ===== -->
+  <div id="hud" class="hidden">
+    <div id="paint-meter">
+      <div class="tube-icon">🖌️</div>
+      <div class="tube"><div id="tube-fill"></div></div>
+      <div id="paint-pct">0%</div>
+    </div>
+    <div id="star-counter"><span class="star-ico">⭐</span><span id="star-num">0</span><span class="star-total">/20</span></div>
+    <button id="btn-sound" aria-label="おと">🔊</button>
+  </div>
+
+  <!-- ===== Toast messages ===== -->
+  <div id="toast" class="hidden"></div>
+  <div id="zone-banner" class="hidden">
+    <div id="zone-banner-inner">
+      <div id="zone-banner-title"></div>
+      <div id="zone-banner-sub"></div>
+    </div>
+  </div>
+
+  <!-- ===== Touch controls ===== -->
+  <div id="joystick" class="hidden"><div id="joy-base"><div id="joy-knob"></div></div></div>
+  <button id="btn-jump" class="hidden" aria-label="ジャンプ">🐰<span>ジャンプ</span></button>
+
+  <!-- ===== Title screen ===== -->
+  <div id="title-screen">
+    <div id="title-logo">
+      <div id="title-brush">🖌️</div>
+      <h1><span class="tl-line1">まほうのふで と</span><span class="tl-line2">いろのしま</span></h1>
+      <div id="title-sub">Magic Brush Island</div>
+    </div>
+    <div id="title-story">しまの いろが きえちゃった！<br>まほうの ふでで、いろを ぬりもどそう！</div>
+    <button id="btn-start"><span>はじめる ▶</span></button>
+    <div id="title-hint">ゆびで うごかす ・ ちかづくと ぬれるよ</div>
+  </div>
+
+  <!-- ===== Finale ===== -->
+  <div id="finale-banner" class="hidden">
+    <div id="finale-inner">
+      <div id="finale-title">🌈 やったー！ 🌈</div>
+      <div id="finale-sub">しまが にじいろに なったよ！</div>
+    </div>
+  </div>
+
+  <div id="rotate-hint" class="hidden">📱 どちらのむきでも あそべるよ！</div>
+  <div id="err-overlay" class="hidden"></div>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/input.js"></script>
+<script src="js/materials.js"></script>
+<script src="js/effects.js"></script>
+<script src="js/builders.js"></script>
+<script src="js/animals.js"></script>
+<script src="js/character.js"></script>
+<script src="js/world.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
