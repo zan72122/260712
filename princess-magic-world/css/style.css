@@ -1,0 +1,342 @@
+/* ============================================================
+   プリンセスと ひかりの おうこく — スタイルシート
+   iPhone / iPad 縦横両対応・4歳児向けの大きなUI
+   ============================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  background: #1a0f33;
+  font-family: -apple-system, "Hiragino Maru Gothic ProN", "Hiragino Sans",
+    "BIZ UDGothic", "Yu Gothic", "Noto Sans JP", sans-serif;
+}
+
+#app { position: fixed; inset: 0; }
+
+#game-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.hidden { display: none !important; }
+
+/* ============================== HUD ============================== */
+#hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#counters {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  left: calc(env(safe-area-inset-left, 0px) + 12px);
+  display: flex;
+  gap: 10px;
+}
+
+.counter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 4px 16px rgba(70, 20, 120, 0.25);
+}
+
+.counter-icon { font-size: 26px; line-height: 1; filter: drop-shadow(0 2px 3px rgba(120,60,0,.35)); }
+
+.counter-num {
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+  min-width: 30px;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(90, 30, 120, 0.6);
+  font-variant-numeric: tabular-nums;
+}
+
+.counter.pop { animation: counter-pop 0.45s ease; }
+@keyframes counter-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.28) rotate(-4deg); }
+  70% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+/* ⭐カウンターの進行リング（10個で花火のおいわい） */
+.progress-ring {
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translateY(-50%) rotate(-90deg);
+  pointer-events: none;
+}
+.ring-bg { fill: none; stroke: rgba(255,255,255,0.25); stroke-width: 4; }
+.ring-fg {
+  fill: none;
+  stroke: #ffd94a;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 119.4; /* 2πr, r=19 */
+  stroke-dashoffset: 119.4;
+  transition: stroke-dashoffset 0.5s ease;
+  filter: drop-shadow(0 0 4px rgba(255, 217, 74, 0.9));
+}
+
+/* ============================== ボタン ============================== */
+#buttons {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.round-btn {
+  pointer-events: auto;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.75);
+  background: linear-gradient(160deg, rgba(255,255,255,0.5), rgba(255,182,230,0.35));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-size: 32px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(70, 20, 120, 0.35), inset 0 2px 6px rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.round-btn:active { transform: scale(0.82); }
+.round-btn.btn-active {
+  background: linear-gradient(160deg, rgba(255,230,120,0.85), rgba(255,170,220,0.7));
+  box-shadow: 0 0 22px rgba(255, 220, 120, 0.9), 0 6px 18px rgba(70, 20, 120, 0.35);
+}
+
+/* ============================== ヒント ============================== */
+#hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 110px);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+#hint-hand {
+  font-size: 52px;
+  animation: hint-tap 1.3s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.35));
+}
+#hint-text {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(120, 60, 180, 0.55);
+  border-radius: 999px;
+  padding: 6px 18px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+@keyframes hint-tap {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-16px) scale(0.9); }
+}
+
+/* ============================== おいわいバナー ============================== */
+#celebrate-banner {
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(24px, 6vw, 44px);
+  font-weight: 900;
+  color: #fff;
+  white-space: nowrap;
+  padding: 14px 34px;
+  border-radius: 999px;
+  background: linear-gradient(120deg, rgba(255, 105, 180, 0.85), rgba(160, 110, 255, 0.85));
+  border: 3px solid rgba(255,255,255,0.9);
+  box-shadow: 0 8px 40px rgba(255, 105, 180, 0.6);
+  text-shadow: 0 3px 6px rgba(120, 30, 90, 0.5);
+  animation: banner-bounce 0.7s ease infinite alternate;
+  pointer-events: none;
+}
+@keyframes banner-bounce {
+  from { transform: translateX(-50%) scale(1) rotate(-1.5deg); }
+  to { transform: translateX(-50%) scale(1.07) rotate(1.5deg); }
+}
+
+/* ============================== タイトル画面 ============================== */
+#title-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 24px;
+  background:
+    radial-gradient(ellipse at 50% 120%, rgba(255, 140, 200, 0.55), transparent 60%),
+    radial-gradient(ellipse at 15% 10%, rgba(120, 170, 255, 0.4), transparent 55%),
+    linear-gradient(175deg, #2a1a5e 0%, #5b2d8f 45%, #b4508f 78%, #f08bb0 100%);
+  transition: opacity 0.9s ease;
+}
+#title-screen.fade-out { opacity: 0; pointer-events: none; }
+
+.title-castle {
+  font-size: clamp(70px, 18vw, 130px);
+  line-height: 1;
+  filter: drop-shadow(0 0 30px rgba(255, 200, 255, 0.8)) drop-shadow(0 10px 20px rgba(40, 10, 70, 0.6));
+  animation: castle-float 3.5s ease-in-out infinite;
+}
+@keyframes castle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+.title-logo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.25;
+}
+.logo-line1 { font-size: clamp(26px, 7vw, 46px); letter-spacing: 0.08em; }
+.logo-line2 {
+  font-size: clamp(34px, 9.5vw, 62px);
+  letter-spacing: 0.06em;
+  background: linear-gradient(180deg, #fff8e0, #ffd94a 55%, #ff9dc7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 3px 2px rgba(90, 30, 120, 0.55)) drop-shadow(0 0 22px rgba(255, 220, 120, 0.55));
+}
+.title-sub {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: clamp(12px, 3vw, 16px);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+#btn-start {
+  margin-top: 18px;
+  font-family: inherit;
+  font-size: clamp(24px, 6vw, 34px);
+  font-weight: 900;
+  color: #7a3c00;
+  padding: 20px 58px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe9a8, #ffc94d 55%, #ffb020);
+  box-shadow: 0 8px 0 #c77f10, 0 14px 34px rgba(255, 180, 40, 0.55), inset 0 2px 4px rgba(255,255,255,0.9);
+  cursor: pointer;
+  animation: start-pulse 1.6s ease-in-out infinite;
+  transition: transform 0.1s ease;
+}
+#btn-start:active { transform: translateY(6px) scale(0.97); box-shadow: 0 2px 0 #c77f10, 0 6px 18px rgba(255,180,40,0.5); }
+@keyframes start-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+.title-note {
+  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: clamp(12px, 3.2vw, 15px);
+  font-weight: 600;
+}
+
+/* タイトルのキラキラ */
+.title-sparkles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.title-sparkles span {
+  position: absolute;
+  color: #fff;
+  opacity: 0;
+  animation: sparkle-twinkle 3.2s ease-in-out infinite;
+  text-shadow: 0 0 14px #ffe9a8, 0 0 30px #ff9dc7;
+}
+.title-sparkles span:nth-child(1)  { left: 8%;  top: 12%; font-size: 26px; animation-delay: 0s; }
+.title-sparkles span:nth-child(2)  { left: 85%; top: 8%;  font-size: 20px; animation-delay: 0.4s; }
+.title-sparkles span:nth-child(3)  { left: 20%; top: 72%; font-size: 30px; animation-delay: 0.8s; }
+.title-sparkles span:nth-child(4)  { left: 75%; top: 64%; font-size: 22px; animation-delay: 1.2s; }
+.title-sparkles span:nth-child(5)  { left: 50%; top: 6%;  font-size: 18px; animation-delay: 1.6s; }
+.title-sparkles span:nth-child(6)  { left: 92%; top: 40%; font-size: 26px; animation-delay: 2.0s; }
+.title-sparkles span:nth-child(7)  { left: 4%;  top: 45%; font-size: 22px; animation-delay: 2.4s; }
+.title-sparkles span:nth-child(8)  { left: 65%; top: 88%; font-size: 28px; animation-delay: 2.8s; }
+.title-sparkles span:nth-child(9)  { left: 35%; top: 30%; font-size: 16px; animation-delay: 1.0s; }
+.title-sparkles span:nth-child(10) { left: 12%; top: 90%; font-size: 24px; animation-delay: 0.2s; }
+@keyframes sparkle-twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.15) rotate(180deg); }
+}
+
+/* ============================== ローディング ============================== */
+#loading {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: linear-gradient(175deg, #2a1a5e, #5b2d8f);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  transition: opacity 0.5s ease;
+}
+#loading.fade-out { opacity: 0; pointer-events: none; }
+.loader-star { font-size: 58px; animation: loader-spin 1.4s ease-in-out infinite; }
+@keyframes loader-spin {
+  0% { transform: rotate(0) scale(1); }
+  50% { transform: rotate(180deg) scale(1.25); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* ============================== 横画面の微調整 ============================== */
+@media (orientation: landscape) and (max-height: 500px) {
+  .round-btn { width: 58px; height: 58px; font-size: 28px; }
+  #buttons {
+    left: auto;
+    right: calc(env(safe-area-inset-right, 0px) + 14px);
+    bottom: 50%;
+    transform: translateY(50%);
+    flex-direction: column;
+    gap: 12px;
+  }
+  #hint { bottom: 24px; }
+}
