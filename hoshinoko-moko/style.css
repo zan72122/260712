@@ -1,0 +1,325 @@
+/* ほしのこモコ — UI スタイル */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+  background: #ffeef7;
+  font-family: "Hiragino Maru Gothic ProN", "BIZ UDGothic", "Yu Gothic", "Rounded Mplus 1c", sans-serif;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app { width: 100%; height: 100%; position: relative; }
+
+#game-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+.hidden { display: none !important; }
+
+/* ---------- HUD ---------- */
+#hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-top: max(10px, env(safe-area-inset-top));
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
+}
+
+#hud-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+#hud-top-right { display: flex; align-items: center; gap: 8px; }
+
+#heart-meter {
+  position: relative;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  padding: 6px 14px 8px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 3px 10px rgba(214, 116, 168, 0.25);
+}
+
+.hearts {
+  font-size: clamp(20px, 4.5vmin, 30px);
+  letter-spacing: 3px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.hearts-bg { color: #e3cfe0; }
+.hearts-fill-wrap {
+  position: absolute;
+  top: 6px; left: 14px;
+  overflow: hidden;
+  width: 0%;
+  transition: width 0.45s ease;
+}
+.hearts-fill { color: #ff5e9c; text-shadow: 0 0 8px rgba(255, 94, 156, 0.55); }
+
+#heart-meter.full .hearts-fill { animation: heartbeat 0.7s ease-in-out infinite; }
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(1.15); }
+}
+
+#star-counter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  padding: 7px 16px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 3px 10px rgba(120, 110, 200, 0.25);
+  font-weight: bold;
+  font-size: clamp(18px, 4vmin, 26px);
+  color: #7a5ec2;
+}
+.star-icon { filter: drop-shadow(0 0 6px rgba(255, 214, 90, 0.9)); }
+
+.chip-btn {
+  pointer-events: auto;
+  border: none;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  width: clamp(40px, 9vmin, 52px);
+  height: clamp(40px, 9vmin, 52px);
+  font-size: clamp(18px, 4vmin, 24px);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 3px 10px rgba(120, 110, 200, 0.25);
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.chip-btn:active { transform: scale(0.88); }
+
+/* 下段ボタン */
+#hud-bottom {
+  display: flex;
+  justify-content: center;
+  gap: clamp(8px, 2.5vmin, 20px);
+}
+
+.play-btn {
+  pointer-events: auto;
+  border: none;
+  cursor: pointer;
+  width: clamp(58px, 13vmin, 84px);
+  height: clamp(58px, 13vmin, 84px);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffffff 0%, #ffe3f1 100%);
+  box-shadow:
+    0 5px 0 #f3b9d5,
+    0 8px 18px rgba(214, 116, 168, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+.play-btn span {
+  font-size: clamp(28px, 6.5vmin, 42px);
+  line-height: 1;
+  transform: translateY(-1px);
+}
+.play-btn:active {
+  transform: translateY(4px) scale(0.96);
+  box-shadow:
+    0 1px 0 #f3b9d5,
+    0 3px 8px rgba(214, 116, 168, 0.3);
+}
+.play-btn.active-glow {
+  background: linear-gradient(180deg, #fff8d6 0%, #ffe9a8 100%);
+  box-shadow:
+    0 5px 0 #e8c56a,
+    0 0 22px rgba(255, 215, 100, 0.8);
+}
+
+/* ---------- トースト（ヒント） ---------- */
+#toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(max(12px, env(safe-area-inset-bottom)) + clamp(58px, 13vmin, 84px) + 22px);
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.88);
+  color: #a05684;
+  font-weight: bold;
+  font-size: clamp(15px, 3.6vmin, 21px);
+  border-radius: 999px;
+  padding: 10px 22px;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(214, 116, 168, 0.3);
+  animation: toast-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  max-width: 92vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@keyframes toast-pop {
+  from { transform: translateX(-50%) translateY(16px) scale(0.7); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+}
+#toast.toast-out { animation: toast-out 0.35s ease forwards; }
+@keyframes toast-out {
+  to { transform: translateX(-50%) translateY(10px) scale(0.85); opacity: 0; }
+}
+
+/* 飛んでいく星（DOM演出） */
+.fly-star {
+  position: absolute;
+  font-size: 34px;
+  pointer-events: none;
+  z-index: 30;
+  filter: drop-shadow(0 0 8px rgba(255, 220, 90, 0.95));
+  will-change: transform, opacity;
+}
+
+/* ---------- スプラッシュ ---------- */
+#splash {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.55), transparent 45%),
+    linear-gradient(170deg, #ffd9ec 0%, #cfe6ff 55%, #d8ccff 100%);
+  transition: opacity 0.7s ease;
+}
+#splash.fade-out { opacity: 0; pointer-events: none; }
+
+#splash-inner {
+  text-align: center;
+  padding: 24px;
+  position: relative;
+}
+
+#splash-stars {
+  position: absolute;
+  inset: -60px;
+  pointer-events: none;
+}
+.splash-star {
+  position: absolute;
+  animation: star-float 3.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 220, 120, 0.9));
+}
+@keyframes star-float {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.85; }
+  50% { transform: translateY(-14px) scale(1.18); opacity: 1; }
+}
+
+#splash-moko {
+  font-size: clamp(64px, 16vmin, 110px);
+  animation: moko-bounce 1.6s ease-in-out infinite;
+  filter: drop-shadow(0 8px 12px rgba(180, 120, 170, 0.35));
+}
+@keyframes moko-bounce {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-16px) rotate(3deg); }
+}
+
+#splash-title {
+  font-size: clamp(38px, 10vmin, 72px);
+  color: #ff6fa5;
+  text-shadow:
+    2px 2px 0 #ffffff,
+    -2px 2px 0 #ffffff,
+    2px -2px 0 #ffffff,
+    -2px -2px 0 #ffffff,
+    0 8px 18px rgba(214, 116, 168, 0.4);
+  letter-spacing: 0.06em;
+  margin-top: 6px;
+}
+#splash-title span {
+  display: inline-block;
+  animation: title-wave 2.2s ease-in-out infinite;
+}
+#splash-title span:nth-child(1) { animation-delay: 0s; }
+#splash-title span:nth-child(2) { animation-delay: 0.1s; }
+#splash-title span:nth-child(3) { animation-delay: 0.2s; }
+#splash-title span:nth-child(4) { animation-delay: 0.3s; }
+#splash-title span:nth-child(6) { animation-delay: 0.45s; color: #7a5ec2; }
+#splash-title span:nth-child(7) { animation-delay: 0.55s; color: #7a5ec2; }
+@keyframes title-wave {
+  0%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-10px); }
+}
+
+#splash-sub {
+  color: #9b7bb8;
+  font-weight: bold;
+  font-size: clamp(15px, 4vmin, 22px);
+  margin-top: 10px;
+}
+
+#btn-start {
+  margin-top: 30px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: bold;
+  font-size: clamp(24px, 6vmin, 36px);
+  color: #fff;
+  padding: 0.55em 1.8em;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ff9cc0 0%, #ff6fa5 100%);
+  box-shadow:
+    0 6px 0 #d9578b,
+    0 12px 24px rgba(214, 87, 139, 0.45);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  animation: start-pulse 1.8s ease-in-out infinite;
+}
+@keyframes start-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+#btn-start:active {
+  transform: translateY(5px) scale(0.97);
+  box-shadow:
+    0 1px 0 #d9578b,
+    0 4px 10px rgba(214, 87, 139, 0.4);
+}
+
+#splash-note {
+  margin-top: 20px;
+  color: #b193c9;
+  font-size: clamp(13px, 3.2vmin, 17px);
+  font-weight: bold;
+}
+
+#webgl-error {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: #ffeef7;
+  color: #a05684;
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 2;
+  padding: 24px;
+}

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#ffd9ec" />
+  <title>ほしのこモコ 〜ふわふわしまの まいにち〜</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐱</text></svg>" />
+  <link rel="stylesheet" href="./style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/three.module.min.js",
+        "three/addons/": "./vendor/three/addons/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+      <div id="hud-top">
+        <div id="heart-meter" aria-label="ごきげんメーター">
+          <div class="hearts hearts-bg">♥♥♥♥♥</div>
+          <div class="hearts hearts-fill-wrap"><div class="hearts hearts-fill">♥♥♥♥♥</div></div>
+        </div>
+        <div id="hud-top-right">
+          <div id="star-counter"><span class="star-icon">⭐</span><span id="star-count">0</span></div>
+          <button id="btn-mute" class="chip-btn" aria-label="おと">🔊</button>
+        </div>
+      </div>
+
+      <div id="toast" class="hidden"></div>
+
+      <div id="hud-bottom">
+        <button class="play-btn" id="btn-apple"  aria-label="りんご"><span>🍎</span></button>
+        <button class="play-btn" id="btn-ball"   aria-label="ボール"><span>⚽</span></button>
+        <button class="play-btn" id="btn-bubble" aria-label="しゃぼんだま"><span>🫧</span></button>
+        <button class="play-btn" id="btn-water"  aria-label="みずやり"><span>🚿</span></button>
+        <button class="play-btn" id="btn-sky"    aria-label="そらをかえる"><span>☀️</span></button>
+      </div>
+    </div>
+
+    <!-- スプラッシュ -->
+    <div id="splash">
+      <div id="splash-inner">
+        <div id="splash-stars"></div>
+        <div id="splash-moko">🐱</div>
+        <h1 id="splash-title"><span>ほ</span><span>し</span><span>の</span><span>こ</span><span class="sp">&nbsp;</span><span>モ</span><span>コ</span></h1>
+        <p id="splash-sub">〜 ふわふわしまの まいにち 〜</p>
+        <button id="btn-start">はじめる</button>
+        <p id="splash-note">🔊 おとが でるよ</p>
+      </div>
+    </div>
+
+    <div id="webgl-error" class="hidden">
+      <p>ごめんね、この ブラウザでは あそべないみたい…<br>べつの ブラウザで ためしてみてね。</p>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
