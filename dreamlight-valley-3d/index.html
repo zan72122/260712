@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#7ec8f7">
+<title>きらきら ドリームバレー</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
+  html, body { width:100%; height:100%; overflow:hidden; position:fixed; background:#7ec8f7; touch-action:none; overscroll-behavior:none;
+    font-family:"Hiragino Maru Gothic ProN","BIZ UDGothic","Rounded Mplus 1c","M PLUS Rounded 1c","Yu Gothic",sans-serif; }
+  #game-canvas { position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+
+  /* ---------- HUD ---------- */
+  #hud { position:absolute; inset:0; pointer-events:none; z-index:10; opacity:0; transition:opacity 1s ease; }
+  #hud.show { opacity:1; }
+
+  .hud-top { position:absolute; top:calc(env(safe-area-inset-top, 0px) + 10px); left:0; right:0;
+    display:flex; justify-content:space-between; align-items:flex-start; padding:0 12px; gap:8px; }
+
+  .badge { background:rgba(255,255,255,.82); border-radius:24px; padding:7px 14px;
+    box-shadow:0 4px 14px rgba(60,40,120,.18), inset 0 -3px 0 rgba(180,160,255,.35);
+    display:flex; align-items:center; gap:6px; font-size:20px; font-weight:800; color:#6b4fa0;
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+  .badge .num { min-width:1.2em; text-align:center; font-variant-numeric:tabular-nums; }
+  .badge.bump { animation:bump .45s ease; }
+  @keyframes bump { 30% { transform:scale(1.25) rotate(-3deg); } 60% { transform:scale(.95); } }
+
+  #counters { display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+
+  /* rainbow quest dots */
+  #rainbow-quest { display:flex; align-items:center; gap:5px; }
+  #rainbow-quest .q-icon { font-size:22px; }
+  .r-dot { width:20px; height:20px; border-radius:50%; background:#e8e2f5; border:2.5px solid #cfc5ec;
+    transition:all .5s cubic-bezier(.34,1.56,.64,1); box-shadow:inset 0 2px 3px rgba(120,100,180,.25); }
+  .r-dot.on { border-color:#fff; transform:scale(1.18); box-shadow:0 0 10px 2px var(--c), inset 0 0 6px rgba(255,255,255,.9); background:var(--c); }
+
+  /* ---------- round buttons ---------- */
+  #buttons { position:absolute; right:calc(env(safe-area-inset-right, 0px) + 12px);
+    bottom:calc(env(safe-area-inset-bottom, 0px) + 14px); display:flex; flex-direction:column; gap:12px; pointer-events:auto; }
+  .rbtn { width:58px; height:58px; border-radius:50%; border:none; font-size:28px; cursor:pointer;
+    background:rgba(255,255,255,.88); box-shadow:0 5px 16px rgba(60,40,120,.28), inset 0 -4px 0 rgba(180,160,255,.4);
+    display:flex; align-items:center; justify-content:center; transition:transform .15s ease;
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+  .rbtn:active { transform:scale(.86); }
+  .rbtn.off { opacity:.55; filter:grayscale(.7); }
+
+  /* ---------- praise popup ---------- */
+  #praise { position:absolute; left:50%; top:34%; transform:translate(-50%,-50%) scale(0);
+    font-size:min(9vw, 52px); font-weight:900; color:#fff; text-align:center; line-height:1.35;
+    text-shadow:0 3px 0 #f79ac0, 0 6px 22px rgba(180,80,160,.55), 0 0 34px rgba(255,220,120,.8);
+    pointer-events:none; z-index:20; white-space:pre-line; }
+  #praise.pop { animation:praisePop 2.6s cubic-bezier(.34,1.56,.64,1) forwards; }
+  @keyframes praisePop {
+    0% { transform:translate(-50%,-50%) scale(0) rotate(-6deg); opacity:0; }
+    14% { transform:translate(-50%,-50%) scale(1.15) rotate(2deg); opacity:1; }
+    22% { transform:translate(-50%,-50%) scale(1); }
+    78% { transform:translate(-50%,-52%) scale(1); opacity:1; }
+    100% { transform:translate(-50%,-62%) scale(1.06); opacity:0; }
+  }
+
+  /* ---------- title screen ---------- */
+  #title { position:absolute; inset:0; z-index:30; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:radial-gradient(120% 90% at 50% 12%, #ffe9f7 0%, #cfe6ff 34%, #9ec9ff 62%, #7fa8f2 100%);
+    transition:opacity 1.2s ease; cursor:pointer; overflow:hidden; }
+  #title.hide { opacity:0; pointer-events:none; }
+  #title h1 { font-size:min(13vw, 84px); font-weight:900; color:#fff; letter-spacing:.04em; text-align:center; line-height:1.25;
+    text-shadow:0 4px 0 #f0a4cc, 0 9px 0 #c98ad4, 0 14px 30px rgba(120,60,160,.4);
+    animation:titleFloat 3.4s ease-in-out infinite; z-index:2; }
+  #title .sub { margin-top:2.2vh; font-size:min(5vw, 26px); color:#8b6ec2; font-weight:800; z-index:2;
+    text-shadow:0 2px 0 rgba(255,255,255,.9); }
+  #title .tap { margin-top:6vh; font-size:min(6.4vw, 34px); font-weight:900; color:#fff; z-index:2;
+    background:linear-gradient(180deg,#ffb2d5,#ff8fc2); padding:16px 42px; border-radius:60px;
+    box-shadow:0 8px 0 #e06ba3, 0 14px 30px rgba(220,80,150,.45); animation:tapPulse 1.5s ease-in-out infinite; }
+  @keyframes titleFloat { 0%,100% { transform:translateY(0) rotate(-1deg);} 50% { transform:translateY(-14px) rotate(1deg);} }
+  @keyframes tapPulse { 0%,100% { transform:scale(1);} 50% { transform:scale(1.09);} }
+  .t-spark { position:absolute; font-size:26px; opacity:.85; animation:sparkFloat linear infinite; z-index:1; }
+  @keyframes sparkFloat { 0% { transform:translateY(105vh) scale(.6) rotate(0deg); opacity:0; }
+    12% { opacity:.9; } 88% { opacity:.9; } 100% { transform:translateY(-8vh) scale(1.15) rotate(200deg); opacity:0; } }
+
+  /* rotate-anytime hint (both orientations OK) */
+  #orient-tip { position:absolute; bottom:calc(env(safe-area-inset-bottom,0px) + 12px); left:0; right:0; text-align:center;
+    color:#8b6ec2; font-size:14px; font-weight:700; z-index:2; opacity:.8; }
+
+  #fade { position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:25; transition:opacity .8s ease; }
+</style>
+</head>
+<body>
+<canvas id="game-canvas"></canvas>
+
+<div id="hud">
+  <div class="hud-top">
+    <div class="badge" id="rainbow-quest">
+      <span class="q-icon">🌈</span>
+      <span class="r-dot" style="--c:#ff5e5e"></span><span class="r-dot" style="--c:#ff9d45"></span>
+      <span class="r-dot" style="--c:#ffd93b"></span><span class="r-dot" style="--c:#5fd971"></span>
+      <span class="r-dot" style="--c:#4db9ff"></span><span class="r-dot" style="--c:#6f7bff"></span>
+      <span class="r-dot" style="--c:#c07bff"></span>
+    </div>
+    <div id="counters">
+      <div class="badge" id="b-star">⭐ <span class="num" id="n-star">0</span></div>
+      <div class="badge" id="b-fruit">🍎 <span class="num" id="n-fruit">0</span></div>
+      <div class="badge" id="b-friend">💛 <span class="num" id="n-friend">0</span></div>
+    </div>
+  </div>
+  <div id="buttons">
+    <button class="rbtn" id="btn-day" aria-label="ひる・よる">🌙</button>
+    <button class="rbtn" id="btn-music" aria-label="おんがく">🎵</button>
+  </div>
+</div>
+
+<div id="praise"></div>
+<div id="fade"></div>
+
+<div id="title">
+  <h1>きらきら<br>ドリームバレー</h1>
+  <div class="sub">✨ まほうの たにへ ようこそ ✨</div>
+  <div class="tap">タップして あそぼう！</div>
+  <div id="orient-tip">たてでも よこでも あそべるよ 📱</div>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="vendor/postprocessing/EffectComposer.js"></script>
+<script src="vendor/postprocessing/RenderPass.js"></script>
+<script src="vendor/postprocessing/ShaderPass.js"></script>
+<script src="vendor/postprocessing/MaskPass.js"></script>
+<script src="vendor/postprocessing/UnrealBloomPass.js"></script>
+<script src="vendor/shaders/CopyShader.js"></script>
+<script src="vendor/shaders/LuminosityHighPassShader.js"></script>
+<script src="vendor/shaders/GammaCorrectionShader.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/world.js"></script>
+<script src="js/effects.js"></script>
+<script src="js/creatures.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
